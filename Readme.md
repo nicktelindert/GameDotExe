@@ -9,10 +9,10 @@ The first time you start the program it will ask you where you ms-dos games are 
 - gamename/gamename.icon
 
 ## ini file example
-[Gameinfo]
-name = Titanic Adventure Out Of Time
-icon = titanic.ico
-exec = C:\gamedir\game.exe
+[Gameinfo]  
+name = Titanic Adventure Out Of Time  
+ icon = titanic.ico  
+ exec = C:\gamedir\game.exe  
 
 The launcher will then  create a dosbox.cfg file with the correct information which then will be used to launch the game.
 
