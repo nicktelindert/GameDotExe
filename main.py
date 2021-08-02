@@ -51,7 +51,7 @@ def detectgames(games_path):
 
 
 def initialize():
-    folder = 'dosgames'
+    folder = 'gamedotexe'
     config_path = os.path.join(xdg_config_home(), folder)
     print(xdg_config_home())
     if not os.path.isdir(config_path):
