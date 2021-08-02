@@ -15,6 +15,8 @@ from xdg import (
     xdg_config_home,
 )
 
+title = "GameDotExe"
+version = "0.1"
 
 def detectgames(games_path):
     print("Found game path:" + games_path)
@@ -92,7 +94,7 @@ def main():
     games_path = config['generic']['path']
 
     win = Gtk.Window()
-    win.set_title("DOS Game Launcher 0.1")
+    win.set_title(title + " " + version)
     win.connect("destroy", Gtk.main_quit)
     win.set_resizable(False)
     detectgames(games_path)
