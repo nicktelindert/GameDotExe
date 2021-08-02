@@ -35,6 +35,7 @@ def detectgames(games_path):
             with open(cfg_file, 'a') as f:
                 f.write("[autoexec]\n")
                 f.write('MOUNT C ' + game_path+"data/\n")
+                f.write('C:\n')
                 f.write(exec_path)
                 f.close()
 
