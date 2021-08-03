@@ -1,9 +1,19 @@
 import configparser
 import os
+from copy import copy
+
+import gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk
+from gi.repository.GdkPixbuf import Pixbuf
+
 from GameInfo import GameInfo
 
 class Crawler:
-    games_list = []
+    games_list = Gtk.ListStore(Pixbuf, str)
+    games_list_original = Gtk.ListStore(Pixbuf, str)
+    game_exec = []
+
     def __init__(self, path):
         print("Found game path:" + path)
         print("Search directories in " + path)
@@ -15,7 +25,6 @@ class Crawler:
             config = configparser.ConfigParser()
             config.read(ini_file)
             exec_path = config['Gameinfo']['exec']
-            print(exec_path);
             if not os.path.isfile(cfg_file):
                 config = configparser.ConfigParser()
                 with open(cfg_file, 'a') as f:
@@ -35,9 +44,20 @@ class Crawler:
                 game_name = config['Gameinfo']['name']
                 print("Found game:" + game_name)
                 icon_file = game_path + config['Gameinfo']['icon']
-                exec_cmd = "dosbox -conf " + cfg_file;
-                game_info = GameInfo(game_name, exec_cmd, icon_file)
-                self.games_list.append(game_info)
+                exec_cmd = "dosbox -conf " + cfg_file
+                game_info = GameInfo(game_name, icon_file)
+                self.game_exec.append(exec_cmd)
+
+                self.games_list.append(game_info.get_row())
+                self.games_list_original.append(game_info.get_row())
 
     def get_list(self):
         return self.games_list
+
+    def get_original_list(self):
+        return self.games_list_original
+
+    def get_exec(self, idx):
+        return self.game_exec[idx]
+
+
