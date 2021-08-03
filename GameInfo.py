@@ -1,4 +1,4 @@
-class gameInfo:
+class GameInfo:
     name = ""
     exec = ""
     icon = ""
