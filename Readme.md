@@ -21,4 +21,6 @@ The launcher will then  create a dosbox.cfg file with the correct information wh
 - ConfigParser
 - Pixbuf
 - gi
+- os
+- pathlib
 
