@@ -35,7 +35,7 @@ class GameDotExe:
         win.set_resizable(False)
         games_list = Crawler(games_path).get_list()
         box = Gtk.VBox()
-        label = Gtk.Label("Games")
+        label = Gtk.Label(label="Games")
         box.pack_start(label, True, True, 0)
         for game in games_list:
             print(game.icon)
