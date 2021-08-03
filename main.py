@@ -25,7 +25,8 @@ class GameDotExe:
     def main(self):
         games_path = self.config.get_path()
         builder = Gtk.Builder()
-        builder.add_from_file("./gui.glade")
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        builder.add_from_file(dir_path + "/gui.glade")
         win = builder.get_object("mainWindow")
         btn_quit = builder.get_object("btn_quit")
         self.crawler = Crawler(games_path)
