@@ -47,3 +47,4 @@ class Config:
             dialog = Dialog()
             games_path = dialog.select_game_folder()
             self.set_path(games_path)
+            dialog.dialog.destroy()
