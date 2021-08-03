@@ -19,6 +19,10 @@ class Crawler:
             if not os.path.isfile(cfg_file):
                 config = configparser.ConfigParser()
                 with open(cfg_file, 'a') as f:
+                    f.write("[sdl]\n")
+                    f.write("fullscreen = true\n")
+                    f.write("fullresolution = desktop\n")
+                    f.write("output = opengl\n\n")
                     f.write("[autoexec]\n")
                     f.write('MOUNT C ' + game_path + "data/\n")
                     f.write('C:\n')
