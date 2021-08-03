@@ -46,7 +46,7 @@ class Crawler:
                 icon_file = game_path + config['Gameinfo']['icon']
                 exec_cmd = "dosbox -conf " + cfg_file
                 game_info = GameInfo(game_name, icon_file)
-                self.game_exec.append(exec_cmd)
+                self.game_exec.append([game_name, exec_cmd])
 
                 self.games_list.append(game_info.get_row())
                 self.games_list_original.append(game_info.get_row())
@@ -57,7 +57,11 @@ class Crawler:
     def get_original_list(self):
         return self.games_list_original
 
-    def get_exec(self, idx):
-        return self.game_exec[idx]
+    def get_exec(self, name):
+        for item in self.game_exec:
+            if item[0] == name:
+                print(item[0])
+                return item[1]
+
 
 

@@ -40,8 +40,5 @@ class GameDotExe:
         win.show_all()
         Gtk.main()
 
-    def handlers(self, widget):
-        print(widget)
-
 
 main = GameDotExe()

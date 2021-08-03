@@ -17,7 +17,8 @@ class Handler:
         Gtk.main_quit()
 
     def launch_application(self, widget, idx):
-        os.system(self.crawler.get_exec(self.crawler, idx[0]))
+        iter = widget.get_model().get_iter_from_string(idx.to_string())
+        os.system(self.crawler.get_exec(self.crawler, widget.get_model().get_value(iter, 1)))
 
     def set_search_term(self, widget):
         self.search_term = widget.get_text()
@@ -29,6 +30,5 @@ class Handler:
             self.crawler.games_list.clear()
             for game_icon in self.crawler.get_original_list(self.crawler):
                 matches = re.match(regex, game_icon[1].lower())
-                print(matches)
                 if matches:
                     self.crawler.games_list.append([game_icon[0], game_icon[1]])
