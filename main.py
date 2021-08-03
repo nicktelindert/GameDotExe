@@ -10,7 +10,6 @@ from gi.repository import Gtk
 
 
 title = "GameDotExe"
-version = "0.1"
 config_dir = 'GameDotExe'
 
 
@@ -30,7 +29,7 @@ class GameDotExe:
     def main(self):
         games_path = self.config.get_path()
         win = Gtk.Window()
-        win.set_title(title + " " + version)
+        win.set_title(title)
         win.connect("destroy", Gtk.main_quit)
         win.set_resizable(False)
         games_list = Crawler(games_path).get_list()
