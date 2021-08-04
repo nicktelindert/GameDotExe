@@ -30,6 +30,7 @@ class GameDotExe:
         win = builder.get_object("mainWindow")
         btn_quit = builder.get_object("btn_quit")
         self.crawler = Crawler(games_path)
+        self.crawler.build_list()
         self.games_list = self.crawler.get_list()
         builder.connect_signals(Handler(Crawler))
         icon_list = builder.get_object("game_icons")
