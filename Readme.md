@@ -24,3 +24,6 @@ The launcher will then  create a dosbox.cfg file with the correct information wh
 - os
 - pathlib
 
+## AppImage
+The AppImage version comes packed with all the necessary dependencies and should work just fine for most people.
+
