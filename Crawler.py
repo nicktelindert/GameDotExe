@@ -44,10 +44,8 @@ class Crawler:
                     icon_file = game_path + config['Gameinfo']['icon']
                     exec_cmd = "dosbox -conf " + cfg_file
                     if not os.path.isfile(icon_file):
-                        default_icon = self.assets_dir + '/default_icon.svg'
-                        copyfile(default_icon, icon_file)
+                        icon_file = self.assets_dir + '/default_icon.svg'
                     game_info = GameInfo(game_name, icon_file)
-
                     self.add_game_to_list(game_info)
                     self.game_exec.append([game_name, exec_cmd])
 
