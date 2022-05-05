@@ -39,15 +39,19 @@ class Crawler:
                 print("Config exists")
                 if (os.path.isfile(ini_file)):
                     config.read(ini_file)
-                    game_name = config['Gameinfo']['name']
-                    print("Found game:" + game_name)
-                    icon_file = game_path + config['Gameinfo']['icon']
-                    exec_cmd = "dosbox -conf " + cfg_file
-                    if not os.path.isfile(icon_file):
-                        icon_file = self.assets_dir + '/default_icon.svg'
-                    game_info = GameInfo(game_name, icon_file)
-                    self.add_game_to_list(game_info)
-                    self.game_exec.append([game_name, exec_cmd])
+                    if 'Gameinfo' in config:
+                        game_name = config['Gameinfo']['name']
+                        print("Found game:" + game_name)
+                        if 'icon' in config['Gameinfo']: 
+                            icon_file = game_path + config['Gameinfo']['icon']
+                            if not os.path.isfile(icon_file):
+                                icon_file = self.assets_dir + '/default_icon.svg'
+                        else:
+                            icon_file = self.assets_dir + '/default_icon.svg'
+                        exec_cmd = "dosbox -conf " + cfg_file
+                        game_info = GameInfo(game_name, icon_file)
+                        self.add_game_to_list(game_info)
+                        self.game_exec.append([game_name, exec_cmd])
 
     def get_list(self):
         return self.games_list
