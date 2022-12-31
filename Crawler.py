@@ -30,10 +30,11 @@ class Crawler:
         for game in os.listdir(path):
             game_path = path + '/' + game + '/';
             ini_file = game_path + game + '.ini'
+            print(ini_file)
             cfg_file = game_path + 'dosbox.cfg'
             config.read(ini_file)
             exec_path = config['Gameinfo']['exec']
-            mount_path = game_path + "data"
+            mount_path = game_path + "c"
 
             if self.create_dosbox_config(mount_path, exec_path, cfg_file):
                 print("Config exists")
@@ -48,7 +49,7 @@ class Crawler:
                                 icon_file = self.assets_dir + '/default_icon.svg'
                         else:
                             icon_file = self.assets_dir + '/default_icon.svg'
-                        exec_cmd = "dosbox -conf " + cfg_file
+                        exec_cmd = 'dosbox -conf "' + cfg_file + '"'
                         game_info = GameInfo(game_name, icon_file)
                         self.add_game_to_list(game_info)
                         self.game_exec.append([game_name, exec_cmd])
@@ -63,7 +64,7 @@ class Crawler:
             config = configparser.ConfigParser()
             with open(cfg_file, 'a') as f:
                 f.write("\n\n[autoexec]\n")
-                f.write('MOUNT C ' + mount_path + "\n")
+                f.write('MOUNT C "' + mount_path + '"' + "\n")
                 f.write('C:\n')
                 f.write(exec_path)
                 f.close()
