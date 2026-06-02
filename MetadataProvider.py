@@ -1,6 +1,7 @@
 import requests
 import json
 import datetime
+from PySide6.QtCore import QCoreApplication
 
 class MetadataProvider:
     def fetch_metadata(self, game_name):
@@ -58,7 +59,10 @@ class PCGamingWikiProvider(MetadataProvider):
 
     def fetch_metadata(self, page_title):
         """Haalt de specifieke metadata op voor een geselecteerde titel."""
-        metadata = {"icon_url": None, "compatibility": "Onbekend", "release_date": "Onbekend"}
+        # Gebruik translate voor standaard statussen
+        unknown_str = QCoreApplication.translate("MetadataProvider", "Onbekend")
+        playable_str = QCoreApplication.translate("MetadataProvider", "Speelbaar (PCGW)")
+        metadata = {"icon_url": None, "compatibility": unknown_str, "release_date": unknown_str}
         try:
             # Haal release datum en de bestandsnaam van de afbeelding op via Cargo
             cargo_params = {
@@ -81,7 +85,7 @@ class PCGamingWikiProvider(MetadataProvider):
             cargo_data = cargo_res.get("cargoquery", [])
             if cargo_data:
                 title_data = cargo_data[0].get("title", {})
-                metadata["release_date"] = title_data.get("Released") or "Onbekend"
+                metadata["release_date"] = title_data.get("Released") or unknown_str
                 image_file = title_data.get("Cover")
                 
                 if image_file:
@@ -110,7 +114,7 @@ class PCGamingWikiProvider(MetadataProvider):
                             # Gebruik thumburl (de gegenereerde thumbnail) indien beschikbaar
                             metadata["icon_url"] = p["imageinfo"][0].get("thumburl", p["imageinfo"][0].get("url"))
 
-            metadata["compatibility"] = "Speelbaar (PCGW)"
+            metadata["compatibility"] = playable_str
         except Exception as e:
             print(f"Metadata error: {e}")
         return metadata

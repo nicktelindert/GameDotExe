@@ -6,46 +6,78 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QListWidget,
                              QWidget, QLineEdit, QLabel, QPushButton, QDialog, 
                              QListWidget as QListSelection, QFileDialog, QInputDialog, QMessageBox,
                              QMenu, QProgressDialog)
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTranslator, QLocale, QLibraryInfo, QCoreApplication
 from PySide6.QtGui import QAction
 from Config import Config
 from Crawler import Crawler
 from DatabaseManager import DatabaseManager
 
+class AboutDialog(QDialog):
+    """Dialoogvenster met informatie over de applicatie."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Over GameDotExe"))
+        self.setMinimumWidth(350)
+        layout = QVBoxLayout(self)
+
+        title = QLabel("<h2>GameDotExe</h2>")
+        title.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title)
+
+        version = QLabel(self.tr("Versie 1.0.0"))
+        version.setAlignment(Qt.AlignCenter)
+        layout.addWidget(version)
+
+        credits = QLabel(
+            self.tr("<p>Een moderne DOSBox game launcher gebouwd met Python en Qt6.</p>"
+            "<p><b>Credits:</b></p>") +
+            "<ul>"
+            f"<li>{self.tr('Ontwikkeld door Nick te Lindert')}</li>"
+            f"<li>{self.tr('Metadata via PCGamingWiki')}</li>"
+            f"<li>{self.tr('DOS emulatie door DOSBox')}</li>"
+            f"<li>{self.tr('GOG extractie via innoextract')}</li>"
+            "</ul>"
+        )
+        credits.setWordWrap(True)
+        layout.addWidget(credits)
+
+        close_btn = QPushButton(self.tr("Sluiten"))
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+
 class EditDialog(QDialog):
     """Dialoogvenster om game-eigenschappen te bewerken."""
     def __init__(self, game_info, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"Eigenschappen bewerken: {game_info.name}")
+        self.setWindowTitle(f"{self.tr('Eigenschappen bewerken')}: {game_info.name}")
         self.setMinimumWidth(450)
         layout = QVBoxLayout(self)
 
         # Naam
-        layout.addWidget(QLabel("Naam van de Game:"))
+        layout.addWidget(QLabel(self.tr("Naam van de Game:")))
         self.name_edit = QLineEdit(game_info.name)
         layout.addWidget(self.name_edit)
         layout.addSpacing(10)
 
-        # Interne Executables (binnen de config)
-        layout.addWidget(QLabel("Interne Game Executable (bijv. START.EXE):"))
+        layout.addWidget(QLabel(self.tr("Interne Game Executable (bijv. START.EXE):")))
         self.exec_edit = QLineEdit(game_info.internal_exec or "")
         layout.addWidget(self.exec_edit)
 
-        layout.addWidget(QLabel("Interne Setup Executable (bijv. SETUP.EXE):"))
+        layout.addWidget(QLabel(self.tr("Interne Setup Executable (bijv. SETUP.EXE):")))
         self.setup_edit = QLineEdit(game_info.internal_setup or "")
         layout.addWidget(self.setup_edit)
 
         # Release Date
-        layout.addWidget(QLabel("Release Datum:"))
+        layout.addWidget(QLabel(self.tr("Release Datum:")))
         self.release_edit = QLineEdit(game_info.release_date or "")
         layout.addWidget(self.release_edit)
 
         # Artwork Path
-        layout.addWidget(QLabel("Artwork Pad:"))
+        layout.addWidget(QLabel(self.tr("Artwork Pad:")))
         art_layout = QHBoxLayout()
         self.art_edit = QLineEdit(game_info.icon_path or "")
         art_layout.addWidget(self.art_edit)
-        browse_btn = QPushButton("Bladeren...")
+        browse_btn = QPushButton(self.tr("Bladeren..."))
         browse_btn.clicked.connect(self.browse_artwork)
         art_layout.addWidget(browse_btn)
         layout.addLayout(art_layout)
@@ -54,16 +86,16 @@ class EditDialog(QDialog):
 
         # Buttons
         btns = QHBoxLayout()
-        save_btn = QPushButton("Opslaan")
+        save_btn = QPushButton(self.tr("Opslaan"))
         save_btn.clicked.connect(self.accept)
-        cancel_btn = QPushButton("Annuleren")
+        cancel_btn = QPushButton(self.tr("Annuleren"))
         cancel_btn.clicked.connect(self.reject)
         btns.addWidget(save_btn)
         btns.addWidget(cancel_btn)
         layout.addLayout(btns)
 
     def browse_artwork(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Selecteer Artwork", "", "Afbeeldingen (*.png *.jpg *.jpeg *.svg)")
+        file_path, _ = QFileDialog.getOpenFileName(self, self.tr("Selecteer Artwork"), "", self.tr("Afbeeldingen (*.png *.jpg *.jpeg *.svg)"))
         if file_path:
             self.art_edit.setText(file_path)
 
@@ -88,14 +120,14 @@ class GameWidget(QWidget):
         layout.addWidget(name_label)
 
         # Release Datum
-        date_label = QLabel(f"Released: {game_info.release_date}")
+        date_label = QLabel(f"{self.tr('Released')}: {game_info.release_date}")
         date_label.setAlignment(Qt.AlignCenter)
         date_label.setStyleSheet("color: #888; font-size: 10px;")
         layout.addWidget(date_label)
 
         # Knoppen
         btn_layout = QHBoxLayout()
-        play_btn = QPushButton("Play")
+        play_btn = QPushButton(self.tr("Play"))
         play_btn.clicked.connect(lambda: launch_callback(game_info.exec_cmd))
         btn_layout.addWidget(play_btn)
 
@@ -105,7 +137,7 @@ class GameWidget(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("GameDotExe - DOSBox Launcher")
+        self.setWindowTitle(self.tr("GameDotExe - DOSBox Launcher"))
         self.setMinimumSize(900, 700)
         
         self.config = Config()
@@ -124,17 +156,21 @@ class MainWindow(QMainWindow):
         # Top bar
         top_layout = QHBoxLayout()
         self.search_bar = QLineEdit()
-        self.search_bar.setPlaceholderText("Zoek een game...")
+        self.search_bar.setPlaceholderText(self.tr("Zoek een game..."))
         self.search_bar.textChanged.connect(self.filter_games)
         top_layout.addWidget(self.search_bar)
 
-        self.force_scan_btn = QPushButton("Force Scan")
+        self.force_scan_btn = QPushButton(self.tr("Force Scan"))
         self.force_scan_btn.clicked.connect(self.force_scan)
         top_layout.addWidget(self.force_scan_btn)
 
-        self.gog_install_btn = QPushButton("Install from GOG")
+        self.gog_install_btn = QPushButton(self.tr("Install from GOG"))
         self.gog_install_btn.clicked.connect(self.install_gog_game)
         top_layout.addWidget(self.gog_install_btn)
+
+        self.about_btn = QPushButton(self.tr("Over"))
+        self.about_btn.clicked.connect(self.show_about_dialog)
+        top_layout.addWidget(self.about_btn)
         
         self.layout.addLayout(top_layout)
         
@@ -149,14 +185,18 @@ class MainWindow(QMainWindow):
         
         self.load_games()
 
+    def show_about_dialog(self):
+        dialog = AboutDialog(self)
+        dialog.exec()
+
     def prompt_metadata_selection(self, game_name, matches):
         dialog = QDialog(self)
-        dialog.setWindowTitle(f"Selecteer metadata voor: {game_name}")
+        dialog.setWindowTitle(f"{self.tr('Selecteer metadata voor')}: {game_name}")
         layout = QVBoxLayout(dialog)
         list_widget = QListSelection()
         list_widget.addItems(matches)
         layout.addWidget(list_widget)
-        btn = QPushButton("Selecteer")
+        btn = QPushButton(self.tr("Selecteer"))
         btn.clicked.connect(dialog.accept)
         layout.addWidget(btn)
         
@@ -174,18 +214,18 @@ class MainWindow(QMainWindow):
         
         # Setup actie (alleen als setup_cmd bestaat)
         if game.setup_cmd:
-            setup_action = QAction("Setup uitvoeren", self)
+            setup_action = QAction(self.tr("Setup uitvoeren"), self)
             setup_action.triggered.connect(lambda: self.launch_cmd(game.setup_cmd))
             menu.addAction(setup_action)
             menu.addSeparator()
             
         # Bewerken
-        edit_action = QAction("Eigenschappen bewerken", self)
+        edit_action = QAction(self.tr("Eigenschappen bewerken"), self)
         edit_action.triggered.connect(lambda: self.edit_game(game))
         menu.addAction(edit_action)
         
         # Verwijderen
-        delete_action = QAction("Verwijderen", self)
+        delete_action = QAction(self.tr("Verwijderen"), self)
         delete_action.triggered.connect(lambda: self.delete_game(game))
         menu.addAction(delete_action)
         
@@ -193,7 +233,7 @@ class MainWindow(QMainWindow):
 
     def install_gog_game(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Selecteer GOG Installer", "", "Executables (*.exe)"
+            self, self.tr("Selecteer GOG Installer"), "", self.tr("Executables (*.exe)")
         )
         if not file_path:
             return
@@ -202,12 +242,12 @@ class MainWindow(QMainWindow):
         default_name = os.path.splitext(os.path.basename(file_path))[0].replace("setup_", "").split("_")[0].capitalize()
         
         game_name, ok = QInputDialog.getText(
-            self, "GOG Installatie", "Onder welke naam moet de game opgeslagen worden?",
+            self, self.tr("GOG Installatie"), self.tr("Onder welke naam moet de game opgeslagen worden?"),
             QLineEdit.Normal, default_name
         )
 
         if ok and game_name:
-            progress = QProgressDialog("Game installeren en scannen...", None, 0, 0, self)
+            progress = QProgressDialog(self.tr("Game installeren en scannen..."), None, 0, 0, self)
             progress.setWindowModality(Qt.WindowModal)
             progress.show()
             QApplication.processEvents()
@@ -219,10 +259,10 @@ class MainWindow(QMainWindow):
                 self.crawler.build_list(force_scan=False, selection_callback=self.prompt_metadata_selection)
                 self.load_games()
                 progress.close()
-                QMessageBox.information(self, "Klaar", f"{game_name} is succesvol geïmporteerd.")
+                QMessageBox.information(self, self.tr("Klaar"), f"{game_name} {self.tr('is succesvol geïmporteerd')}.")
             except Exception as e:
                 progress.close()
-                QMessageBox.critical(self, "Fout", str(e))
+                QMessageBox.critical(self, self.tr("Fout"), str(e))
 
     def edit_game(self, game_info):
         dialog = EditDialog(game_info, self)
@@ -243,7 +283,7 @@ class MainWindow(QMainWindow):
                 new_path = os.path.join(self.config.get_path(), new_name)
                 
                 if os.path.exists(new_path):
-                    QMessageBox.warning(self, "Fout", "Een map met deze naam bestaat al.")
+                    QMessageBox.warning(self, self.tr("Fout"), self.tr("Een map met deze naam bestaat al."))
                     return
                 
                 os.rename(old_path, new_path)
@@ -266,9 +306,9 @@ class MainWindow(QMainWindow):
 
     def delete_game(self, game_info):
         reply = QMessageBox.question(
-            self, "Bevestig Verwijdering",
-            f"Weet je zeker dat je '{game_info.name}' wilt verwijderen?\n\n"
-            "Dit verwijdert de game uit de lijst én de map op de schijf definitief.",
+            self, self.tr("Bevestig Verwijdering"),
+            f"{self.tr('Weet je zeker dat je')} '{game_info.name}' {self.tr('wilt verwijderen?')}\n\n"
+            + self.tr("Dit verwijdert de game uit de lijst én de map op de schijf definitief."),
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
 
@@ -287,7 +327,7 @@ class MainWindow(QMainWindow):
         selected_item = self.list_widget.currentItem()
         target = selected_item.data(Qt.UserRole + 1) if selected_item else None
         
-        progress = QProgressDialog("Bibliotheek scannen...", None, 0, 0, self)
+        progress = QProgressDialog(self.tr("Bibliotheek scannen..."), None, 0, 0, self)
         progress.setWindowModality(Qt.WindowModal)
         progress.show()
         QApplication.processEvents()
@@ -325,6 +365,22 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    
+    # --- Vertaling logica ---
+    translator = QTranslator()
+    # Zoek naar .qm bestanden in de 'translations' map
+    # Bestandsnaam formaat: gamedotexe_nl.qm
+    translations_path = os.path.join(os.path.dirname(__file__), "translations")
+    if translator.load(QLocale.system(), "gamedotexe", "_", translations_path):
+        app.installTranslator(translator)
+        
+    # Laad ook standaard Qt systeemvertalingen (voor QFileDialog etc)
+    qt_translator = QTranslator()
+    qt_trans_path = QLibraryInfo.path(QLibraryInfo.TranslationsPath)
+    if qt_translator.load(QLocale.system(), "qtbase", "_", qt_trans_path):
+        app.installTranslator(qt_translator)
+    # -----------------------
+
     # Voor AppImage support en styling
     app.setStyle("Fusion") 
     window = MainWindow()
