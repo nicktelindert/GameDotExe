@@ -21,7 +21,7 @@ class Crawler:
         self.metadata_provider = metadata_provider or PCGamingWikiProvider(log_path=log_path)
         self.games = []
 
-    def build_list(self, force_scan=False, selection_callback=None, target_folder=None):
+    def build_list(self, force_scan=False, selection_callback=None, exe_selection_callback=None, target_folder=None):
         if not self.base_path or not os.path.exists(self.base_path):
             return
 
@@ -36,7 +36,7 @@ class Crawler:
                 if existing_game and not force_scan:
                     continue
 
-                game_info = self._process_game_folder(entry, selection_callback)
+                game_info = self._process_game_folder(entry, selection_callback, exe_selection_callback)
                 if game_info:
                     self.db.save_game(entry.name, game_info)
 
@@ -48,7 +48,7 @@ class Crawler:
                 if game_info:
                     self.games.append(game_info)
 
-    def _process_game_folder(self, entry, selection_callback):
+    def _process_game_folder(self, entry, selection_callback, exe_selection_callback):
         game_path = entry.path
         game_name = entry.name
         ini_file = os.path.join(game_path, f"{game_name}.ini")
@@ -68,8 +68,12 @@ class Crawler:
                 exec_path = config.get('Gameinfo', 'exec')
 
         if not exec_path:
-            print(f"Geen executable gevonden in {game_name}, spel wordt overgeslagen.")
-            return None
+            if exe_selection_callback:
+                exec_path = exe_selection_callback(game_path)
+            
+            if not exec_path:
+                print(f"Geen executable gevonden in {game_name}, spel wordt overgeslagen.")
+                return None
 
         # We mounten de game_path zelf als C:
         self.create_dosbox_config(game_path, exec_path, cfg_file)

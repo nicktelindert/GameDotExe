@@ -147,7 +147,7 @@ class MainWindow(QMainWindow):
         # Maak een pad voor de lokale artwork cache
         artwork_path = os.path.join(self.config.config_dir_path, "artwork")
         self.crawler = Crawler(self.config.get_path(), self.db_manager, artwork_dir=artwork_path, log_path=self.config.get_log_path())
-        self.crawler.build_list(selection_callback=self.prompt_metadata_selection)
+        self.crawler.build_list(selection_callback=self.prompt_metadata_selection, exe_selection_callback=self.prompt_exe_selection)
         
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -204,6 +204,15 @@ class MainWindow(QMainWindow):
             return list_widget.currentItem().text()
         return game_name
 
+    def prompt_exe_selection(self, game_path):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, f"{self.tr('Selecteer startbestand voor')}: {os.path.basename(game_path)}", 
+            game_path, self.tr("Executables (*.exe *.com *.bat)")
+        )
+        if file_path:
+            return os.path.relpath(file_path, game_path).replace('/', '\\')
+        return None
+
     def show_context_menu(self, pos):
         item = self.list_widget.itemAt(pos)
         if not item:
@@ -256,7 +265,7 @@ class MainWindow(QMainWindow):
                 installer = GogInstaller(self.config.get_path())
                 installer.install(file_path, game_name)
                 # Alleen nieuwe games scannen, geen force scan op alles
-                self.crawler.build_list(force_scan=False, selection_callback=self.prompt_metadata_selection)
+                self.crawler.build_list(force_scan=False, selection_callback=self.prompt_metadata_selection, exe_selection_callback=self.prompt_exe_selection)
                 self.load_games()
                 progress.close()
                 QMessageBox.information(self, self.tr("Klaar"), f"{game_name} {self.tr('is succesvol geïmporteerd')}.")
@@ -292,7 +301,7 @@ class MainWindow(QMainWindow):
                 self.db_manager.delete_game(old_folder_name)
                 
                 # 3. Nieuwe scan doen op de nieuwe folder
-                self.crawler.build_list(force_scan=True, selection_callback=self.prompt_metadata_selection, target_folder=new_name)
+                self.crawler.build_list(force_scan=True, selection_callback=self.prompt_metadata_selection, exe_selection_callback=self.prompt_exe_selection, target_folder=new_name)
             else:
                 # Alleen metadata gewijzigd: update configs en DB
                 game_path = os.path.join(self.config.get_path(), old_folder_name)
@@ -334,7 +343,8 @@ class MainWindow(QMainWindow):
         
         self.crawler.build_list(
             force_scan=True, 
-            selection_callback=self.prompt_metadata_selection, 
+            selection_callback=self.prompt_metadata_selection,
+            exe_selection_callback=self.prompt_exe_selection,
             target_folder=target
         )
         self.load_games()
