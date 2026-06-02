@@ -64,9 +64,9 @@ GameDotExe is a user-friendly DOSBox game launcher, designed to make managing an
 GameDotExe supports English, Dutch, German, French, and Spanish. The language is automatically chosen based on your system settings.
 
 To update translations:
-1. Generate `.ts` files: `pyside6-lupdate main.py MetadataProvider.py -ts translations/gamedotexe_nl.ts`
+1. Generate `.ts` files: `lupdate main.py MetadataProvider.py -ts translations/gamedotexe_nl.ts`  
 2. Translate the text using **Qt Linguist**.
-3. Compile to `.qm`: `pyside6-lrelease translations/*.ts`
+3. Compile to `.qm`: `lrelease translations/*.ts`  
 
 ## Generating AppImage
 

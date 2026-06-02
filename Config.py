@@ -1,8 +1,7 @@
 import configparser
 import os
 from pathlib import Path
-
-from Dialog import Dialog
+from PySide6.QtWidgets import QFileDialog
 
 class Config:
     config_dir = 'GameDotExe'
@@ -26,9 +25,15 @@ class Config:
     def get_path(self):
         config = configparser.ConfigParser()
         config.read(self.config_file_path)
-        print(self.config_file_path)
         if config.has_section('generic'):
             return config.get('generic', 'path')
+
+    def get_language(self):
+        config = configparser.ConfigParser()
+        config.read(self.config_file_path)
+        if config.has_section('generic'):
+            return config.get('generic', 'language', fallback=None)
+        return None
 
     def get_log_path(self):
         return self.log_file_path
@@ -43,9 +48,13 @@ class Config:
 
     def init_config(self):
         if not self.config_dir_exists():
-            os.mkdir(self.config_dir_path)
+            os.makedirs(self.config_dir_path, exist_ok=True)
 
         if not self.config_file_exists():
-            dialog = Dialog()
-            games_path = dialog.select_game_folder()
-            self.set_path(games_path)
+            games_path = QFileDialog.getExistingDirectory(
+                None, 
+                "Selecteer de map met MS-DOS Games",
+                options=QFileDialog.ShowDirsOnly
+            )
+            if games_path:
+                self.set_path(games_path)
