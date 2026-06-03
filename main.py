@@ -1,6 +1,6 @@
 import sys
 import os
-from PySide6.QtWidgets import (QApplication, QMainWindow, QListWidget, QListWidgetItem, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QListWidget, QListWidgetItem,
                              QVBoxLayout, QHBoxLayout, QWidget, QLineEdit, QPushButton, 
                              QDialog, QListWidget as QListSelection, QFileDialog, 
                              QInputDialog, QMessageBox, QMenu, QProgressDialog)
@@ -35,6 +35,10 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
         # 4. Start de applicatie logica
+        # Controleer of de games_path al is ingesteld, anders vraag de gebruiker
+        if not self.config.get_path():
+            self._prompt_for_games_path()
+
         self.presenter.initial_load()
 
     def setup_ui(self):
@@ -190,6 +194,19 @@ class MainWindow(QMainWindow):
 
     def show_about_dialog(self):
         AboutDialog(self).exec()
+
+    def _prompt_for_games_path(self):
+        """Vraagt de gebruiker om de hoofdmap voor games te selecteren."""
+        games_path = QFileDialog.getExistingDirectory(
+            self, 
+            QCoreApplication.translate("MainWindow", "Select the main folder for your MS-DOS Games"),
+            options=QFileDialog.ShowDirsOnly
+        )
+        if games_path:
+            self.config.set_path(games_path)
+        else:
+            QMessageBox.critical(self, QCoreApplication.translate("MainWindow", "Error"), QCoreApplication.translate("MainWindow", "No games folder selected. The application will not function correctly."))
+            sys.exit(1) # Exit if no path is selected, as the app cannot function
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

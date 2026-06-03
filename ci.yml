@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: |
+          pip install requests pyfakefs
+      - name: Run All Tests
+        run: python -m unittest discover .
+
+  build-macos:
+    name: Build macOS App Bundle
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install PySide6 requests pyinstaller
+      - name: Build macOS App
+        run: |
+          chmod +x build_macos.sh
+          ./build_macos.sh
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameDotExe-macOS
+          path: dist/GameDotExe.app
+
+  build-linux:
+    name: Build Linux AppImage
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install PySide6 requests pyinstaller
+      - name: Install appimagetool
+        run: |
+          sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage
+          sudo chmod +x /usr/local/bin/appimagetool
+      - name: Build AppImage
+        run: |
+          # AppImageTool flag voor environments zonder FUSE (zoals GitHub runners)
+          export APPIMAGETOOL_X_ARGS="--appimage-extract-and-run"
+          chmod +x build_appimage.sh
+          ./build_appimage.sh
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GameDotExe-Linux
+          path: dist/*.AppImage

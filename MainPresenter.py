@@ -1,6 +1,5 @@
 import os
 import shutil
-from PySide6.QtCore import QObject
 
 class MainPresenter:
     def __init__(self, view, config, db_manager, crawler):

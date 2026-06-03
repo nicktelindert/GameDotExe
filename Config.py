@@ -1,7 +1,6 @@
 import configparser
 import os
 import pathlib
-from PySide6.QtWidgets import QFileDialog
 import platform
 
 class Config:
@@ -46,22 +45,13 @@ class Config:
         return self.log_file_path
 
     def set_path(self, path):
-        filehandler = pathlib.Path(self.config_file_path)
         config = configparser.ConfigParser()
         config.read(self.config_file_path)
         config['generic'] = {}
         config['generic']['path'] = path
-        config.write(filehandler.open('w'))
+        with open(self.config_file_path, 'w') as configfile:
+            config.write(configfile)
 
     def init_config(self):
         if not self.config_dir_exists():
             os.makedirs(self.config_dir_path, exist_ok=True)
-
-        if not self.config_file_exists():
-            games_path = QFileDialog.getExistingDirectory(
-                None, 
-                "Selecteer de map met MS-DOS Games",
-                options=QFileDialog.ShowDirsOnly
-            )
-            if games_path:
-                self.set_path(games_path)
