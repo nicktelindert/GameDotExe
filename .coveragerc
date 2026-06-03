@@ -1,0 +1,11 @@
+[run]
+source = .
+omit =
+    tests/*
+    test_*.py
+    */shibokensupport/*
+    */PySide6/*
+
+[report]
+show_missing = True
+skip_covered = True

@@ -22,7 +22,7 @@ jobs:
           pip install coverage
       - name: Run All Tests
         run: |
-          coverage run -m unittest discover .
+          coverage run --source=. -m unittest discover .
       - name: Generate Coverage Report
         run: |
           coverage report -m
