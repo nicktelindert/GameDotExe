@@ -68,7 +68,8 @@ ln -s "usr/bin/${APP_NAME}" "${APPDIR_PATH}/AppRun"
 
 echo "--- Stap 3: Genereren van AppImage met appimagetool ---"
 export ARCH=$(uname -m)
-"${APPIMAGETOOL_PATH}" "${APPDIR_PATH}" "${DIST_DIR}/${APP_NAME}-${ARCH}.AppImage"
+"${APPIMAGETOOL_PATH}" deploy "${APPDIR_PATH}/${APP_NAME}.desktop" --overwrite
 
+mv dist/GameDotExe dist/GameDotExe-${ARCH}.AppImage
 echo "--- AppImage generatie voltooid! ---"
 echo "Je AppImage zou moeten staan in de '${DIST_DIR}' map."

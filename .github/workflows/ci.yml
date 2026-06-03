@@ -16,11 +16,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libopengl0 libxcb-cursor0
       - name: Install dependencies
         run: |
           pip install PySide6 requests pyfakefs
       - name: Run All Tests
-        run: python -m unittest discover -p 'test_*.py'
+        run: python -m unittest discover .
 
   build-macos:
     name: Build macOS App Bundle
@@ -58,7 +62,7 @@ jobs:
         run: pip install PySide6 requests pyinstaller
       - name: Install appimagetool
         run: |
-          sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimaged-940-x86_64.AppImage
+          sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-940-x86_64.AppImage
           sudo chmod +x /usr/local/bin/appimagetool
       - name: Build AppImage
         run: |
