@@ -87,7 +87,7 @@ python -m unittest discover .
 Ensure the development dependencies are installed before running the tests:
 
 ```bash
-pip install PySide6 requests pyfakefs
+pip install -r requirements.txt
 ```
 
 ## Generating AppImage
