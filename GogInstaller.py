@@ -2,7 +2,7 @@ import subprocess
 import os
 import shutil
 import tempfile
-from pathlib import Path
+import pathlib
 from DosGameDatabase import DosGameDatabase
 
 class GogInstaller:
@@ -34,7 +34,7 @@ class GogInstaller:
             blacklist_terms = ['setup', 'install', 'setsound', 'uninstall']
             first_letter = game_name[0].lower()
 
-            for p in Path(tmp_dir).rglob('*'):
+            for p in pathlib.Path(tmp_dir).rglob('*'):
                 if p.is_file() and p.suffix.lower() in allowed_extensions:
                     if not any(term in p.name.lower() for term in blacklist_terms):
                         # Verplichte eerste letter match
@@ -69,9 +69,9 @@ class GogInstaller:
                 # Fallback: If no specific executable match, try 'app' folder or the root tmp_dir
                 src_app_folder = os.path.join(tmp_dir, "app")
                 if os.path.exists(src_app_folder) and os.path.isdir(src_app_folder):
-                    game_root_in_tmp = Path(src_app_folder)
+                    game_root_in_tmp = pathlib.Path(src_app_folder)
                 else:
-                    game_root_in_tmp = Path(tmp_dir) # Assume game is directly in tmp_dir
+                    game_root_in_tmp = pathlib.Path(tmp_dir) # Assume game is directly in tmp_dir
 
             if not game_root_in_tmp or not game_root_in_tmp.exists():
                 raise Exception(f"Kon de game-bestanden niet vinden in de geëxtraheerde GOG installer voor '{game_name}'.")
@@ -92,11 +92,11 @@ class GogInstaller:
             def ignore_gog_files(directory, contents):
                 ignored = []
                 for item in contents:
-                    item_path = Path(directory) / item
+                    item_path = pathlib.Path(directory) / item
                     item_lower = item.lower()
 
                     # Check against specific GOG patterns
-                    if any(Path(item).match(pattern) for pattern in gog_ignore_patterns):
+                    if any(pathlib.Path(item).match(pattern) for pattern in gog_ignore_patterns):
                         ignored.append(item)
                         continue
                     

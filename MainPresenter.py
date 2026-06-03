@@ -1,4 +1,5 @@
 import os
+import shutil
 from PySide6.QtCore import QObject
 
 class MainPresenter:
@@ -56,7 +57,6 @@ class MainPresenter:
     def delete_game(self, game_info):
         """Verwijder een game van schijf en uit DB."""
         if self.view.confirm_deletion(game_info.name):
-            import shutil
             # 1. Verwijder uit database
             self.db.delete_game(game_info.folder_name)
             # 2. Verwijder map van schijf

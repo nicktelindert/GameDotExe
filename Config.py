@@ -1,16 +1,23 @@
 import configparser
 import os
-from pathlib import Path
+import pathlib
 from PySide6.QtWidgets import QFileDialog
+import platform
 
 class Config:
     config_dir = 'GameDotExe'
     config_file = 'config.ini'
 
     def __init__(self):
-        # Handmatige bepaling van XDG_CONFIG_HOME voor maximale compatibiliteit
-        xdg_home = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
-        self.config_dir_path = os.path.join(xdg_home, self.config_dir)
+        # Platform-specifieke bepaling van de configuratie map
+        if platform.system() == 'Darwin':  # macOS
+            config_base = os.path.expanduser('~/Library/Application Support')
+        elif platform.system() == 'Windows':
+            config_base = os.environ.get('APPDATA') or os.path.expanduser('~\\AppData\\Roaming')
+        else:  # Linux / Unix
+            config_base = os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')
+
+        self.config_dir_path = os.path.join(config_base, self.config_dir)
         self.config_file_path = os.path.join(self.config_dir_path, self.config_file)
         self.log_file_path = os.path.join(self.config_dir_path, 'pcgamingwiki.log')
         self.init_config()
@@ -39,7 +46,7 @@ class Config:
         return self.log_file_path
 
     def set_path(self, path):
-        filehandler = Path(self.config_file_path)
+        filehandler = pathlib.Path(self.config_file_path)
         config = configparser.ConfigParser()
         config.read(self.config_file_path)
         config['generic'] = {}

@@ -1,7 +1,7 @@
 import configparser
 import os
-from shutil import copyfile
-from pathlib import Path
+import shutil
+import pathlib
 import requests
 from GameInfo import GameInfo
 from MetadataProvider import PCGamingWikiProvider
@@ -116,7 +116,7 @@ class Crawler:
         first_letter = game_name[0].lower()
         
         found_files = []
-        for p in Path(path).rglob('*'):
+        for p in pathlib.Path(path).rglob('*'):
             if p.is_file() and p.suffix.lower() in allowed_extensions:
                 # Controleer of de bestandsnaam (lowercase) geen blacklisted term bevat
                 if not any(term in p.name.lower() for term in blacklist_terms):
@@ -150,7 +150,7 @@ class Crawler:
     def _find_setup_executable(self, path):
         """Zoekt specifiek naar setup of sound configuratie bestanden."""
         setup_patterns = ['setup.exe', 'setsound.exe', 'install.exe', 'sndsetup.exe', 'sound.exe', 'setup.bat', 'install.bat']
-        for p in Path(path).rglob('*'):
+        for p in pathlib.Path(path).rglob('*'):
             if p.is_file() and p.name.lower() in setup_patterns:
                 # Relatief pad t.o.v. de game folder voor DOSBox mount
                 return os.path.relpath(p, path).replace('/', '\\')
@@ -188,6 +188,6 @@ class Crawler:
     def create_dosbox_config(self, mount_path, exec_path, cfg_file):
         template = os.path.join(self.assets_dir, 'dosbox.cfg')
         if os.path.exists(template):
-            copyfile(template, cfg_file)
+            shutil.copyfile(template, cfg_file)
             with open(cfg_file, 'a') as f:
                 f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\nC:\n{exec_path}\nexit\n")

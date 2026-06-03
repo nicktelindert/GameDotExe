@@ -68,6 +68,28 @@ To update translations:
 2. Translate the text using **Qt Linguist**.
 3. Compile to `.qm`: `lrelease translations/*.ts`  
 
+## Development
+
+### Running Tests
+
+To ensure application stability, we use unit tests. These test the logic of the Presenters, the Crawler, and the DatabaseManager without needing to start the full GUI.
+
+**Run all tests:**
+
+Use the standard Python `unittest` framework to automatically discover and run all tests in the project:
+
+```bash
+python -m unittest discover .
+```
+
+**Requirements for testing:**
+
+Ensure the development dependencies are installed before running the tests:
+
+```bash
+pip install PySide6 requests pyfakefs
+```
+
 ## Generating AppImage
 
 To build an AppImage yourself on Linux, you need the following extra tools in addition to the standard dependencies:
