@@ -58,7 +58,7 @@ jobs:
         run: pip install PySide6 requests pyinstaller
       - name: Install appimagetool
         run: |
-          sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-x86_64.AppImage
+          sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimaged-940-x86_64.AppImage
           sudo chmod +x /usr/local/bin/appimagetool
       - name: Build AppImage
         run: |
