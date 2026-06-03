@@ -24,7 +24,7 @@ jobs:
         run: |
           pip install -r requirements.txt
       - name: Run All Tests
-        run: python -m unittest discover .
+        run: python -m unittest discover -p 'test_*.py'
 
   build-macos:
     name: Build macOS App Bundle
