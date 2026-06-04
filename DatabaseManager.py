@@ -33,6 +33,12 @@ class DatabaseManager:
                 )
             """)
 
+            # Migratie: Controleer of iso_path kolom bestaat, zo niet: voeg toe
+            cursor = conn.execute("PRAGMA table_info(games)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            if 'iso_path' not in columns:
+                conn.execute("ALTER TABLE games ADD COLUMN iso_path TEXT")
+
     def get_game(self, folder_name):
         with self._get_conn() as conn:
             cursor = conn.execute("SELECT * FROM games WHERE folder_name = ?", (folder_name,))
@@ -47,7 +53,8 @@ class DatabaseManager:
                     compatibility=row['compatibility'],
                     release_date=row['release_date'],
                     internal_exec=row['internal_exec'],
-                    internal_setup=row['internal_setup']
+                    internal_setup=row['internal_setup'],
+                    iso_path=row['iso_path']
                 )
         return None
 
@@ -57,12 +64,12 @@ class DatabaseManager:
                 INSERT OR REPLACE INTO games (
                     folder_name, display_name, icon_path, exec_cmd, 
                     setup_cmd, compatibility, release_date, 
-                    internal_exec, internal_setup
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    internal_exec, internal_setup, iso_path
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (folder_name, game_info.name, game_info.icon_path, 
                   game_info.exec_cmd, game_info.setup_cmd, 
                   game_info.compatibility, game_info.release_date,
-                  game_info.internal_exec, game_info.internal_setup))
+                  game_info.internal_exec, game_info.internal_setup, game_info.iso_path))
             conn.commit()
 
     def get_all_games(self):
@@ -79,7 +86,8 @@ class DatabaseManager:
                     compatibility=row['compatibility'],
                     release_date=row['release_date'],
                     internal_exec=row['internal_exec'],
-                    internal_setup=row['internal_setup']
+                    internal_setup=row['internal_setup'],
+                    iso_path=row['iso_path']
                 ))
         return games
 

@@ -1,6 +1,6 @@
 import configparser
 import os
-import shutil # Keep shutil for copyfile
+import shutil
 import pathlib
 import requests
 from GameInfo import GameInfo
@@ -36,7 +36,7 @@ class Crawler:
                 if existing_game and not force_scan:
                     continue
 
-                game_info = self._process_game_folder(entry, selection_callback, exe_selection_callback)
+                game_info = self._process_game_folder(entry, selection_callback, exe_selection_callback, existing_game)
                 if game_info:
                     self.db.save_game(entry.name, game_info)
 
@@ -48,7 +48,7 @@ class Crawler:
                 if game_info:
                     self.games.append(game_info)
 
-    def _process_game_folder(self, entry, selection_callback, exe_selection_callback):
+    def _process_game_folder(self, entry, selection_callback, exe_selection_callback, existing_game=None):
         game_path = entry.path
         game_name = entry.name
         ini_file = os.path.join(game_path, f"{game_name}.ini")
@@ -74,10 +74,12 @@ class Crawler:
             if not exec_path:
                 print(f"Geen executable gevonden in {game_name}, spel wordt overgeslagen.")
                 return None
+        
+        # Bepaal de iso_path voor de DOSBox config. Als de game al bestaat, gebruik dan de opgeslagen iso_path.
+        current_iso_path = existing_game.iso_path if existing_game and hasattr(existing_game, 'iso_path') else None
 
         # We mounten de game_path zelf als C:
-        self.create_dosbox_config(game_path, exec_path, cfg_file)
-        
+        self.create_dosbox_config(game_path, exec_path, cfg_file, iso_path=current_iso_path)
         setup_cmd = None
         if setup_exe:
             self.create_dosbox_config(game_path, setup_exe, cfg_setup_file)
@@ -100,7 +102,7 @@ class Crawler:
             icon_path = self._download_artwork(game_name, meta["icon_url"])
 
         exec_cmd = f'dosbox -conf "{cfg_file}"'
-        return GameInfo(game_name, display_name, icon_path, exec_cmd, setup_cmd, meta["compatibility"], meta["release_date"], exec_path, setup_exe)
+        return GameInfo(game_name, display_name, icon_path, exec_cmd, setup_cmd, meta["compatibility"], meta["release_date"], exec_path, setup_exe, iso_path=current_iso_path)
 
     def _find_executable(self, path, game_name):
         """Zoekt naar de meest logische executable in de map."""
@@ -185,9 +187,14 @@ class Crawler:
     def get_list(self):
         return self.games
 
-    def create_dosbox_config(self, mount_path, exec_path, cfg_file):
+    def create_dosbox_config(self, mount_path, exec_path, cfg_file, iso_path=None):
         template = os.path.join(self.assets_dir, 'dosbox.cfg')
         if os.path.exists(template):
             shutil.copyfile(template, cfg_file)
             with open(cfg_file, 'a') as f:
-                f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\nC:\n{exec_path}\nexit\n")
+                f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\n")
+                if iso_path:
+                    f.write(f"IMGMOUNT D \"{iso_path}\" -t iso\n")
+                    f.write("D:\n")
+                f.write("C:\n")
+                f.write(f"{exec_path}\nexit\n")

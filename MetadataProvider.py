@@ -86,6 +86,9 @@ class PCGamingWikiProvider(MetadataProvider):
             if cargo_data:
                 title_data = cargo_data[0].get("title", {})
                 metadata["release_date"] = title_data.get("Released") or unknown_str
+                # Als er meerdere releasedata zijn (gescheiden door ';'), pak de eerste
+                if isinstance(metadata["release_date"], str) and ';' in metadata["release_date"]:
+                    metadata["release_date"] = metadata["release_date"].split(';')[0].strip()
                 image_file = title_data.get("Cover")
                 
                 if image_file:
