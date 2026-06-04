@@ -4,7 +4,7 @@
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('/usr/bin/dosbox', '.')],
     datas=[('assets', 'assets'), ('ui', 'ui'), ('known_dos_games.json', '.')],
     hiddenimports=[],
     hookspath=[],
