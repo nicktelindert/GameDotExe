@@ -45,7 +45,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GameDotExe-macOS
+          name: GameDotExe-macOS.app
           path: dist/GameDotExe.app
 
   build-linux:
@@ -77,5 +77,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GameDotExe-Linux
+          name: GameDotExe-Linux.AppImage
           path: dist/*.AppImage
