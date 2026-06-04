@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 class MainPresenter:
     def __init__(self, view, config, db_manager, crawler):
@@ -61,8 +62,15 @@ class MainPresenter:
                 f.write("EXIT\n")
 
             # Start DOSBox interactief
+            # Zoek naar gebundelde dosbox
+            bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
+            dosbox_cmd = bundled_dosbox if os.path.exists(bundled_dosbox) else "dosbox"
+            
+            if not shutil.which(dosbox_cmd) and not os.path.exists(bundled_dosbox):
+                 raise Exception("DOSBox binary niet gevonden.")
+
             import subprocess
-            subprocess.run(["dosbox", "-conf", cfg_file])
+            subprocess.run([dosbox_cmd, "-conf", cfg_file])
 
             # Ruim tijdelijke config op
             if os.path.exists(cfg_file):

@@ -1,6 +1,6 @@
 import sys
 import os
-from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog)
+from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog, QMessageBox)
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication
@@ -35,10 +35,10 @@ class QmlBridge(QObject):
         self._games = [
             {
                 "name": g.name,
-                "icon": "file:///" + g.icon_path.replace('\\', '/'),
-                "command": g.exec_cmd,
+                "icon": ("file:///" + g.icon_path.replace('\\', '/')) if g.icon_path else "",
+                "command": g.exec_cmd or "",
                 "folder": g.folder_name,
-                "releaseDate": g.release_date or "Unknown",
+                "releaseDate": g.release_date or QCoreApplication.translate("QmlBridge", "Onbekend"),
                 "setup_cmd": g.setup_cmd,
                 "compatibility": g.compatibility,
                 "internal_exec": g.internal_exec,
@@ -120,20 +120,55 @@ class QmlBridge(QObject):
     def show_progress(self, message): pass
     def hide_progress(self): pass
     def show_info(self, title, message): pass
-    def show_error(self, title, message): print(f"Error: {message}")
+
+    def show_error(self, title, message):
+        """Toon een foutmelding die zichtbaar is voor de gebruiker."""
+        QMessageBox.critical(None, title, message)
 
     @Slot(str)
     def launch_game(self, cmd):
         import subprocess
+        import shutil
         import shlex
+
+        if not cmd:
+            self.show_error("Launch Error", "Geen geldig opstartcommando gevonden voor dit spel.")
+            return
+
+        # Bepaal het pad naar dosbox (gebundeld of systeem)
+        bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
+        if os.path.exists(bundled_dosbox):
+            dosbox_path = bundled_dosbox
+        else:
+            dosbox_path = shutil.which("dosbox")
+
+        if not dosbox_path:
+            self.show_error("Error", "DOSBox is niet gevonden. Installeer 'dosbox' om spellen te kunnen starten.")
+            return
+
+        # Parse het commando. We verwachten iets als: dosbox -conf "/pad/naar/dosbox.cfg"
         try:
-            if os.name == 'nt':
-                subprocess.Popen(cmd, shell=True)
-            else:
-                args = shlex.split(cmd)
-                subprocess.Popen(args)
+            args = shlex.split(cmd)
+            # Vervang 'dosbox' (het eerste argument) door het volledige pad
+            if args[0] == "dosbox":
+                args[0] = dosbox_path
+            
+            # Controleer of de config file die in het commando staat wel echt bestaat
+            if "-conf" in args:
+                conf_idx = args.index("-conf") + 1
+                if conf_idx < len(args) and not os.path.exists(args[conf_idx]):
+                    self.show_error("Config Error", f"Configuratiebestand niet gevonden:\n{args[conf_idx]}")
+                    return
+
         except Exception as e:
-            print(f"Launch Error: {e}")
+            self.show_error("Command Error", f"Fout bij het verwerken van het commando: {str(e)}")
+            return
+
+        try:
+            # Start het proces zonder shell=True voor betere betrouwbaarheid
+            subprocess.Popen(args)
+        except Exception as e:
+            self.show_error("Launch Error", f"Kon DOSBox niet starten: {str(e)}")
 
     @Slot()
     def start_iso_install(self):
@@ -156,8 +191,6 @@ class QmlBridge(QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon("assets/default_icon.svg"))
-
     config = Config()
     db_path = os.path.join(config.config_dir_path, "games.db")
     db_manager = DatabaseManager(db_path)
@@ -179,6 +212,9 @@ if __name__ == "__main__":
         # Draait in een normale Python omgeving
         application_base_path = os.path.dirname(os.path.abspath(__file__))
     engine.rootContext().setContextProperty("applicationBasePath", application_base_path)
+
+    # Stel het icon pad correct in t.o.v. de bundle root om runtime errors te voorkomen
+    app.setWindowIcon(QIcon(os.path.join(application_base_path, "assets", "default_icon.svg")))
 
     # Laad het QML bestand
     qml_file = os.path.join(application_base_path, "ui", "main.qml")

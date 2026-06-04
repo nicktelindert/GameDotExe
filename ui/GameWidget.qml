@@ -18,6 +18,19 @@ Rectangle {
     property var gameModelData: ({}) // Om het hele modelData object door te geven voor contextmenu's
     signal clicked()
 
+    MouseArea {
+        id: mouseArea
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: function(mouse) {
+            root.clicked()
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.popup()
+            }
+        }
+    }
+
     Column {
         anchors.fill: parent
         anchors.margins: 10
@@ -76,20 +89,10 @@ Rectangle {
             MouseArea {
                 id: playMouse
                 anchors.fill: parent
-                onClicked: bridge.launch_game(root.command)
-            }
-        }
-    }
-
-    MouseArea {
-        id: mouseArea
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: function(mouse) {
-            root.clicked()
-            if (mouse.button === Qt.RightButton) {
-                contextMenu.popup()
+                onClicked: {
+                    root.clicked() // Zorg dat de kaart ook geselecteerd wordt bij het starten
+                    bridge.launch_game(root.command)
+                }
             }
         }
     }

@@ -30,10 +30,19 @@ if [ -z "$APPIMAGETOOL_PATH" ]; then
     exit 1
 fi
 
+# 3. Zoek het pad naar de lokale dosbox binary om te bundelen
+DOSBOX_BIN=$(command -v dosbox)
+if [ -z "$DOSBOX_BIN" ]; then
+    echo "Waarschuwing: dosbox binary niet gevonden op dit systeem."
+    echo "Installeer dosbox (bijv. sudo apt install dosbox) om het mee te bundelen."
+fi
+
 echo "--- Stap 1: Bundelen met PyInstaller ---"
 # We voegen de data bestanden direct toe aan de PyInstaller bundle
 pyinstaller --noconfirm --onefile --windowed \
     --add-data "assets:assets" \
+    ${DOSBOX_BIN:+--add-binary "$DOSBOX_BIN:."} \
+    --add-data "ui:ui" \
     --add-data "known_dos_games.json:." \
     --name "${APP_NAME}" "${MAIN_SCRIPT}"
 

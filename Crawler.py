@@ -2,6 +2,7 @@ import configparser
 import os
 import shutil
 import pathlib
+import sys
 import requests
 from GameInfo import GameInfo
 from MetadataProvider import PCGamingWikiProvider
@@ -11,7 +12,10 @@ class Crawler:
     def __init__(self, path, db_manager, metadata_provider=None, log_path=None, artwork_dir=None):
         self.base_path = path
         self.db = db_manager
-        self.assets_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
+        
+        # Gebruik het bundle-pad indien bevroren (PyInstaller), anders het script-pad
+        base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        self.assets_dir = os.path.join(base_dir, "assets")
         
         # Gebruik de meegegeven artwork_dir of val terug op de assets dir
         self.artwork_dir = artwork_dir or self.assets_dir
@@ -190,11 +194,16 @@ class Crawler:
     def create_dosbox_config(self, mount_path, exec_path, cfg_file, iso_path=None):
         template = os.path.join(self.assets_dir, 'dosbox.cfg')
         if os.path.exists(template):
-            shutil.copyfile(template, cfg_file)
-            with open(cfg_file, 'a') as f:
-                f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\n")
-                if iso_path:
-                    f.write(f"IMGMOUNT D \"{iso_path}\" -t iso\n")
-                    f.write("D:\n")
-                f.write("C:\n")
-                f.write(f"{exec_path}\nexit\n")
+            try:
+                shutil.copyfile(template, cfg_file)
+                with open(cfg_file, 'a') as f:
+                    f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\n")
+                    if iso_path:
+                        f.write(f"IMGMOUNT D \"{iso_path}\" -t iso\n")
+                        f.write("D:\n")
+                    f.write("C:\n")
+                    f.write(f"{exec_path}\nexit\n")
+            except Exception as e:
+                print(f"Fout bij schrijven van config {cfg_file}: {e}")
+        else:
+            print(f"FOUT: DOSBox template niet gevonden op {template}")
