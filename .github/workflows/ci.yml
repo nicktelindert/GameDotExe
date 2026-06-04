@@ -64,6 +64,9 @@ jobs:
           sudo apt-get install -y libegl1 libopengl0 libxcb-cursor0 libxcb-xkb1 libxkbcommon-x11-0 libxcb-image0 libxcb-icccm4 libxcb-render-util0 libxcb-util1 libxcb-shape0 libxcb-keysyms1 libtiff6
       - name: Install dependencies
         run: pip install PySide6 requests pyinstaller
+      - name: Symlink libtiff.so.6 to libtiff.so.5
+        run: | 
+          sudo ln -s /usr/lib/x86_64-linux-gnu/libtiff.so.6 /usr/lib/x86_64-linux-gnu/libtiff.so.5
       - name: Install appimagetool
         run: |
           sudo wget -O /usr/local/bin/appimagetool https://github.com/probonopd/go-appimage/releases/download/continuous/appimagetool-940-x86_64.AppImage
