@@ -1,4 +1,5 @@
 import requests
+import os
 import json
 import datetime
 from PySide6.QtCore import QCoreApplication
@@ -13,9 +14,26 @@ class MetadataProvider:
 class PCGamingWikiProvider(MetadataProvider):
     BASE_URL = "https://www.pcgamingwiki.com/w/api.php"
 
-    def __init__(self, log_path=None):
+    def __init__(self, log_path=None, cache_dir=None):
         self.log_path = log_path
         self.headers = {'User-Agent': 'GameDotExe/1.0 (MS-DOS Launcher; +https://github.com/nick/GameDotExe)'}
+        self.cache_file = os.path.join(cache_dir, "pcgw_cache.json") if cache_dir else None
+        self.cache = {"search": {}, "metadata": {}}
+        self._load_cache()
+
+    def _load_cache(self):
+        if self.cache_file and os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, "r") as f:
+                    self.cache = json.load(f)
+            except Exception: pass
+
+    def _save_cache(self):
+        if self.cache_file:
+            try:
+                with open(self.cache_file, "w") as f:
+                    json.dump(self.cache, f)
+            except Exception: pass
 
     def _log(self, message, data):
         if not self.log_path:
@@ -34,6 +52,9 @@ class PCGamingWikiProvider(MetadataProvider):
 
     def search_matches(self, game_name):
         """Geeft een lijst met mogelijke pagina-titels terug."""
+        if game_name in self.cache["search"]:
+            return self.cache["search"][game_name]
+
         try:
             search_params = {
                 "action": "query",
@@ -52,16 +73,22 @@ class PCGamingWikiProvider(MetadataProvider):
             self._log(f"Search matches for '{game_name}'", response)
             
             search_results = response.get("query", {}).get("search", [])
-            return [result["title"] for result in search_results]
+            titles = [result["title"] for result in search_results]
+            self.cache["search"][game_name] = titles
+            self._save_cache()
+            return titles
         except Exception as e:
             print(f"Search error: {e}")
             return []
 
     def fetch_metadata(self, page_title):
         """Haalt de specifieke metadata op voor een geselecteerde titel."""
-        # Gebruik translate voor standaard statussen
-        unknown_str = QCoreApplication.translate("MetadataProvider", "Onbekend")
-        playable_str = QCoreApplication.translate("MetadataProvider", "Speelbaar (PCGW)")
+        if page_title in self.cache["metadata"]:
+            return self.cache["metadata"][page_title]
+
+        # Use translate for standard statuses
+        unknown_str = QCoreApplication.translate("MetadataProvider", "Unknown")
+        playable_str = QCoreApplication.translate("MetadataProvider", "Playable (PCGW)")
         metadata = {"icon_url": None, "compatibility": unknown_str, "release_date": unknown_str}
         try:
             # Haal release datum en de bestandsnaam van de afbeelding op via Cargo
@@ -118,6 +145,8 @@ class PCGamingWikiProvider(MetadataProvider):
                             metadata["icon_url"] = p["imageinfo"][0].get("thumburl", p["imageinfo"][0].get("url"))
 
             metadata["compatibility"] = playable_str
+            self.cache["metadata"][page_title] = metadata
+            self._save_cache()
         except Exception as e:
             print(f"Metadata error: {e}")
         return metadata

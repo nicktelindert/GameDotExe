@@ -161,7 +161,7 @@ Dialog {
                     "icon_path": editIconInput.text,
                     "iso_path": root.currentGame.iso_path
                 }
-                bridge.show_edit_game_dialog(data)
+                bridge.save_game_properties(data)
                 root.close()
             }
             background: Rectangle { color: "#AAAAAA" }

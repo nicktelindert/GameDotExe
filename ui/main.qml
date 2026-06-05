@@ -7,10 +7,10 @@ ApplicationWindow {
     visible: true
     width: 900
     height: 700
-    title: "GameDotExe - MS-DOS NOSTALGIA"
+    title: qsTr("GameDotExe - MS-DOS NOSTALGIA")
     color: "#0000AA" // Classic DOS Blue
 
-    // Laad het DOS lettertype vanuit de assets map
+    // Load the DOS font from the assets folder
     FontLoader {
         id: dosFont
         source: "file://" + applicationBasePath + "/assets/font.ttf"
@@ -122,6 +122,7 @@ ApplicationWindow {
                         releaseDate: "Released: " + modelData.releaseDate
                         command: modelData.command
                         gameModelData: modelData
+                        isIgnored: modelData.isIgnored
                         isSelected: GridView.isCurrentItem
                         onClicked: gameGrid.currentIndex = index
                     }
@@ -184,7 +185,7 @@ ApplicationWindow {
         editDialog.openWithData(gameData)
     }
     function openConfirmDelete(gameName, folderName) {
-        confirmDialog.message = "Weet je zeker dat je '" + gameName + "' wilt verwijderen?\n\nDit zal de game permanent verwijderen uit de lijst en de map op schijf."
+        confirmDialog.message = qsTr("Are you sure you want to delete '%1'?\n\nThis will permanently remove the game from the list and the folder on disk.").arg(gameName)
         confirmDialog.folderToDelete = folderName
         confirmDialog.open()
     }

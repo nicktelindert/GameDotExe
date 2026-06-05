@@ -15,6 +15,7 @@ Rectangle {
     property alias releaseDate: dateText.text
     property string command: ""
     property bool isSelected: false
+    property bool isIgnored: false
     property var gameModelData: ({}) // Om het hele modelData object door te geven voor contextmenu's
     signal clicked()
 
@@ -97,10 +98,55 @@ Rectangle {
         }
     }
 
+    // --- Lock Indicator (DOS Style) ---
+    Rectangle {
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: 5
+        width: 60
+        height: 20
+        color: "black"
+        border.color: "#FFFF55"
+        visible: root.isIgnored
+        z: 10 // Zorg dat het boven de afbeelding ligt
+
+        Text {
+            text: "LOCKED"
+            anchors.centerIn: parent
+            color: "#FFFF55"
+            font.family: dosFont.name
+            font.pixelSize: 10
+            font.bold: true
+        }
+    }
+
     Menu {
         id: contextMenu
         font.family: dosFont.name
         
+        MenuItem {
+            text: qsTr("Run Setup")
+            enabled: !!gameModelData.setup_cmd
+            onTriggered: bridge.launch_game(gameModelData.setup_cmd)
+        }
+
+        MenuItem {
+            text: qsTr("Ignore Folder")
+            visible: !root.isIgnored
+            onTriggered: bridge.ignore_folder(gameModelData.folder)
+        }
+
+        MenuItem {
+            text: qsTr("Allow Scanning")
+            visible: root.isIgnored
+            onTriggered: bridge.unignore_folder(gameModelData.folder)
+        }
+
+        MenuItem {
+            text: qsTr("Refresh Metadata")
+            onTriggered: bridge.force_scan(gameModelData.folder)
+        }
+
         MenuItem {
             text: "EDIT PROPERTIES"
             onClicked: mainWindow.openEdit(root.gameModelData)

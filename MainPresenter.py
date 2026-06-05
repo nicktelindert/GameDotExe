@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+from PySide6.QtCore import QCoreApplication
 
 class MainPresenter:
     def __init__(self, view, config, db_manager, crawler):
@@ -39,7 +40,7 @@ class MainPresenter:
         try:
             game_path = os.path.join(self.config.get_path(), game_name)
             if os.path.exists(game_path):
-                raise Exception(f"De map '{game_name}' bestaat al.")
+                raise Exception(QCoreApplication.translate("MainPresenter", "The folder '{0}' already exists.").format(game_name))
 
             os.makedirs(game_path, exist_ok=True)
 
@@ -67,7 +68,7 @@ class MainPresenter:
             dosbox_cmd = bundled_dosbox if os.path.exists(bundled_dosbox) else "dosbox"
             
             if not shutil.which(dosbox_cmd) and not os.path.exists(bundled_dosbox):
-                 raise Exception("DOSBox binary niet gevonden.")
+                 raise Exception(QCoreApplication.translate("MainPresenter", "DOSBox binary not found."))
 
             import subprocess
             subprocess.run([dosbox_cmd, "-conf", cfg_file])
@@ -86,7 +87,8 @@ class MainPresenter:
                 self.db.save_game(game_name, game_info) # Sla het bijgewerkte GameInfo object op
                 self.view.load_games(self.crawler.get_list()) # Ververs de UI
             else:
-                self.view.show_error("Error", f"Kon '{game_name}' niet vinden na de installatiescan.")
+                self.view.show_error(QCoreApplication.translate("MainPresenter", "Error"), 
+                                     QCoreApplication.translate("MainPresenter", "Could not find '{0}' after installation scan.").format(game_name))
 
         except Exception as e:
             self.view.show_error("Error", str(e))
@@ -112,13 +114,46 @@ class MainPresenter:
         """Slaat gewijzigde metadata op en ververst de UI."""
         game_path = os.path.join(self.config.get_path(), old_folder_name)
         
-        # Update configs op schijf
-        self.crawler.create_dosbox_config(game_path, game_info.internal_exec, os.path.join(game_path, "dosbox.cfg"))
+        # Zorg dat de commando's correct worden gegenereerd op basis van de (nieuwe) paden en iso_path
+        cfg_exec = os.path.join(game_path, "dosbox.cfg")
+        self.crawler.create_dosbox_config(game_path, game_info.internal_exec, cfg_exec, iso_path=game_info.iso_path)
+        game_info.exec_cmd = f'dosbox -conf "{cfg_exec}"'
+
         if game_info.internal_setup:
-            self.crawler.create_dosbox_config(game_path, game_info.internal_setup, os.path.join(game_path, "dosbox_setup.cfg"))
+            cfg_setup = os.path.join(game_path, "dosbox_setup.cfg")
+            self.crawler.create_dosbox_config(game_path, game_info.internal_setup, cfg_setup)
+            game_info.setup_cmd = f'dosbox -conf "{cfg_setup}"'
+        else:
+            game_info.setup_cmd = None
         
         # Update Database
         self.db.save_game(old_folder_name, game_info)
         
+        # Ververs de in-memory lijst van de crawler vanuit de DB
+        self.crawler.build_list()
+
         # Reload UI
+        self.view.load_games(self.crawler.get_list())
+
+    def ignore_folder(self, folder_name):
+        """Mark a folder as ignored by creating a marker file. Ignored folders stay in the library
+        with their current metadata but will never be updated by a scanner again."""
+        game_path = os.path.join(self.config.get_path(), folder_name)
+        if os.path.exists(game_path):
+            # Create the marker file so the Crawler skips this in the future
+            marker_path = os.path.join(game_path, "GAMEDOT.EXC")
+            with open(marker_path, 'w') as f:
+                f.write("EXCLUDED FROM GAMEDOTEXE")
+        
+        self.crawler.build_list()
+        self.view.load_games(self.crawler.get_list())
+
+    def unignore_folder(self, folder_name):
+        """Remove the ignore marker so the folder can be scanned again."""
+        game_path = os.path.join(self.config.get_path(), folder_name)
+        marker_path = os.path.join(game_path, "GAMEDOT.EXC")
+        if os.path.exists(marker_path):
+            os.remove(marker_path)
+        
+        self.crawler.build_list()
         self.view.load_games(self.crawler.get_list())

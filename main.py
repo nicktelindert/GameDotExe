@@ -38,13 +38,14 @@ class QmlBridge(QObject):
                 "icon": ("file:///" + g.icon_path.replace('\\', '/')) if g.icon_path else "",
                 "command": g.exec_cmd or "",
                 "folder": g.folder_name,
-                "releaseDate": g.release_date or QCoreApplication.translate("QmlBridge", "Onbekend"),
+                "releaseDate": g.release_date or QCoreApplication.translate("QmlBridge", "Unknown"),
                 "setup_cmd": g.setup_cmd,
                 "compatibility": g.compatibility,
                 "internal_exec": g.internal_exec,
                 "internal_setup": g.internal_setup,
                 "iso_path": g.iso_path,
-                "icon_path": g.icon_path
+                "icon_path": g.icon_path,
+                "isIgnored": bool(getattr(g, "is_ignored", False))
             } for g in games_list
         ]
         self.gamesChanged.emit()
@@ -55,11 +56,12 @@ class QmlBridge(QObject):
         if game_info:
             self.presenter.delete_game(game_info)
         else:
-            self.show_error("Error", f"Game met folder '{folder_name}' niet gevonden voor verwijdering.")
+            self.show_error(QCoreApplication.translate("QmlBridge", "Error"), 
+                            QCoreApplication.translate("QmlBridge", "Game folder '{0}' not found for deletion.").format(folder_name))
 
     @Slot(dict)
-    def show_edit_game_dialog(self, game_data):
-        # Sla de wijzigingen direct op via de presenter (geen QtWidgets dialoog meer)
+    def save_game_properties(self, game_data):
+        """Slaat de gewijzigde metadata op via de presenter."""
         game_info = GameInfo(
             folder_name=game_data.get("folder"),
             name=game_data.get("name"),
@@ -92,15 +94,30 @@ class QmlBridge(QObject):
 
     # --- Benodigde interface methodes voor de Presenter ---
     def prompt_metadata_selection(self, game_name, matches):
+        manual_option = QCoreApplication.translate("QmlBridge", "[ Manual Entry... ]")
+        matches_list = list(matches) if matches else []
+        display_list = matches_list + [manual_option]
+        
+        title = QCoreApplication.translate("QmlBridge", "Select Metadata Match")
+        label = QCoreApplication.translate("QmlBridge", "Select the correct match for '{0}':").format(game_name) if matches_list else \
+                QCoreApplication.translate("QmlBridge", "No matches found for '{0}'. Enter name manually:").format(game_name)
+
         item, ok = QInputDialog.getItem(
-            None,
-            QCoreApplication.translate("QmlBridge", "Select Metadata Match"),
-            QCoreApplication.translate("QmlBridge", "Multiple matches found for '{0}'. Select the correct one:").format(game_name),
-            matches,
-            0,
+            None, title, label, display_list,
+            len(display_list) - 1 if not matches_list else 0,
             False
         )
-        return item if ok else matches[0]
+
+        if ok:
+            if item == manual_option:
+                custom_name, ok_text = QInputDialog.getText(
+                    None, QCoreApplication.translate("QmlBridge", "Manual Entry"),
+                    QCoreApplication.translate("QmlBridge", "Enter the exact game name for metadata lookup:"),
+                    text=game_name
+                )
+                return custom_name if ok_text and custom_name else game_name
+            return item
+        return matches_list[0] if matches_list else game_name
 
     def prompt_exe_selection(self, game_path):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -132,7 +149,7 @@ class QmlBridge(QObject):
         import shlex
 
         if not cmd:
-            self.show_error("Launch Error", "Geen geldig opstartcommando gevonden voor dit spel.")
+            self.show_error(QCoreApplication.translate("QmlBridge", "Launch Error"), QCoreApplication.translate("QmlBridge", "No valid startup command found for this game."))
             return
 
         # Bepaal het pad naar dosbox (gebundeld of systeem)
@@ -143,7 +160,7 @@ class QmlBridge(QObject):
             dosbox_path = shutil.which("dosbox")
 
         if not dosbox_path:
-            self.show_error("Error", "DOSBox is niet gevonden. Installeer 'dosbox' om spellen te kunnen starten.")
+            self.show_error(QCoreApplication.translate("QmlBridge", "Error"), QCoreApplication.translate("QmlBridge", "DOSBox not found. Please install 'dosbox' to launch games."))
             return
 
         # Parse het commando. We verwachten iets als: dosbox -conf "/pad/naar/dosbox.cfg"
@@ -157,18 +174,19 @@ class QmlBridge(QObject):
             if "-conf" in args:
                 conf_idx = args.index("-conf") + 1
                 if conf_idx < len(args) and not os.path.exists(args[conf_idx]):
-                    self.show_error("Config Error", f"Configuratiebestand niet gevonden:\n{args[conf_idx]}")
+                    self.show_error(QCoreApplication.translate("QmlBridge", "Config Error"), 
+                                    QCoreApplication.translate("QmlBridge", "Configuration file not found:\n{0}").format(args[conf_idx]))
                     return
 
         except Exception as e:
-            self.show_error("Command Error", f"Fout bij het verwerken van het commando: {str(e)}")
+            self.show_error(QCoreApplication.translate("QmlBridge", "Command Error"), QCoreApplication.translate("QmlBridge", "Error processing command: {0}").format(str(e)))
             return
 
         try:
             # Start het proces zonder shell=True voor betere betrouwbaarheid
             subprocess.Popen(args)
         except Exception as e:
-            self.show_error("Launch Error", f"Kon DOSBox niet starten: {str(e)}")
+            self.show_error(QCoreApplication.translate("QmlBridge", "Launch Error"), QCoreApplication.translate("QmlBridge", "Could not start DOSBox: {0}").format(str(e)))
 
     @Slot()
     def start_iso_install(self):
@@ -182,12 +200,21 @@ class QmlBridge(QObject):
             self.presenter.install_from_iso(iso_path, game_name)
 
     @Slot()
-    def force_scan(self):
-        self.presenter.force_scan()
+    @Slot(str)
+    def force_scan(self, folder=None):
+        self.presenter.force_scan(folder)
 
     @Slot(str)
     def filter_games(self, text):
         self.presenter.filter_games(text)
+
+    @Slot(str)
+    def ignore_folder(self, folder_name):
+        self.presenter.ignore_folder(folder_name)
+
+    @Slot(str)
+    def unignore_folder(self, folder_name):
+        self.presenter.unignore_folder(folder_name)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -22,7 +22,7 @@ class Crawler:
         if not os.path.exists(self.artwork_dir):
             os.makedirs(self.artwork_dir, exist_ok=True)
             
-        self.metadata_provider = metadata_provider or PCGamingWikiProvider(log_path=log_path)
+        self.metadata_provider = metadata_provider or PCGamingWikiProvider(log_path=log_path, cache_dir=os.path.dirname(log_path) if log_path else None)
         self.games = []
 
     def build_list(self, force_scan=False, selection_callback=None, exe_selection_callback=None, target_folder=None):
@@ -34,6 +34,10 @@ class Crawler:
             if entry.is_dir():
                 # Als we een target_folder hebben, negeer de rest
                 if target_folder and entry.name != target_folder:
+                    continue
+
+                # Skip folders that have an exclusion marker
+                if os.path.exists(os.path.join(entry.path, "GAMEDOT.EXC")):
                     continue
 
                 existing_game = self.db.get_game(entry.name)
@@ -50,6 +54,7 @@ class Crawler:
             if entry.is_dir():
                 game_info = self.db.get_game(entry.name)
                 if game_info:
+                    game_info.is_ignored = os.path.exists(os.path.join(entry.path, "GAMEDOT.EXC"))
                     self.games.append(game_info)
 
     def _process_game_folder(self, entry, selection_callback, exe_selection_callback, existing_game=None):
@@ -59,24 +64,55 @@ class Crawler:
         cfg_file = os.path.join(game_path, 'dosbox.cfg')
         cfg_setup_file = os.path.join(game_path, 'dosbox_setup.cfg')
         
-        # Gebruik de folder naam als basis voor de zoekopdracht
-        display_name = game_name
-        exec_path = self._find_executable(game_path, display_name)
-        setup_exe = self._find_setup_executable(game_path)
-        
+        # Heuristic Name Resolution
+        display_name = None
+        exec_path = None
+        matches = []
+
+        # 1. Check for existing INI override
         if os.path.isfile(ini_file):
             config = configparser.ConfigParser()
             config.read(ini_file)
-            display_name = config.get('Gameinfo', 'name', fallback=game_name)
+            display_name = config.get('Gameinfo', 'name', fallback=None)
             if config.has_option('Gameinfo', 'exec'):
                 exec_path = config.get('Gameinfo', 'exec')
+            if display_name:
+                matches = self.metadata_provider.search_matches(display_name)
+
+        # 2. Try FILE_ID.DIZ and validate against API
+        if not matches:
+            diz_name = self._extract_name_from_diz(game_path)
+            if diz_name:
+                diz_matches = self.metadata_provider.search_matches(diz_name)
+                if diz_matches:
+                    display_name = diz_name
+                    matches = diz_matches
+
+        # 3. Try searching in manual filenames
+        if not matches:
+            manual_name = self._extract_name_from_docs(game_path)
+            if manual_name:
+                doc_matches = self.metadata_provider.search_matches(manual_name)
+                if doc_matches:
+                    display_name = manual_name
+                    matches = doc_matches
+
+        # 4. Fallback to cleaned folder name
+        if not matches:
+            display_name = self._clean_folder_name(game_name)
+            matches = self.metadata_provider.search_matches(display_name)
+
+        if not exec_path:
+            exec_path = self._find_executable(game_path, display_name)
+            
+        setup_exe = self._find_setup_executable(game_path)
 
         if not exec_path:
             if exe_selection_callback:
                 exec_path = exe_selection_callback(game_path)
             
             if not exec_path:
-                print(f"Geen executable gevonden in {game_name}, spel wordt overgeslagen.")
+                print(f"No executable found in {game_name}, skipping game.")
                 return None
         
         # Bepaal de iso_path voor de DOSBox config. Als de game al bestaat, gebruik dan de opgeslagen iso_path.
@@ -90,10 +126,9 @@ class Crawler:
             setup_cmd = f'dosbox -conf "{cfg_setup_file}"'
 
         # Metadata selectie
-        matches = self.metadata_provider.search_matches(display_name)
         selected_title = display_name
         
-        if len(matches) > 1 and selection_callback:
+        if selection_callback and (len(matches) != 1):
             selected_title = selection_callback(display_name, matches)
         elif len(matches) == 1:
             selected_title = matches[0]
@@ -104,9 +139,71 @@ class Crawler:
         icon_path = os.path.join(self.assets_dir, "default_icon.svg")
         if meta["icon_url"]:
             icon_path = self._download_artwork(game_name, meta["icon_url"])
+        else:
+            # Fallback: check for local icon in game folder
+            local_icon = self._find_internal_icon(game_path)
+            if local_icon:
+                icon_path = local_icon
 
         exec_cmd = f'dosbox -conf "{cfg_file}"'
-        return GameInfo(game_name, display_name, icon_path, exec_cmd, setup_cmd, meta["compatibility"], meta["release_date"], exec_path, setup_exe, iso_path=current_iso_path)
+        return GameInfo(game_name, selected_title, icon_path, exec_cmd, setup_cmd, meta["compatibility"], meta["release_date"], exec_path, setup_exe, iso_path=current_iso_path)
+
+    def _clean_folder_name(self, name):
+        """Strips extensions and cleans up common scene naming conventions."""
+        # Strip common folder extensions
+        for suffix in ['.cd', '.iso', '.bin', '.cue', '.bak', '.dat', '.d']:
+            if name.lower().endswith(suffix):
+                name = name[:-len(suffix)]
+        
+        # Replace underscores and points with spaces
+        cleaned = name.replace('_', ' ').replace('.', ' ').strip()
+        return cleaned
+
+    def _extract_name_from_diz(self, path):
+        """Tries to find and parse FILE_ID.DIZ for a clean game title."""
+        try:
+            for filename in os.listdir(path):
+                if filename.lower() == "file_id.diz":
+                    with open(os.path.join(path, filename), 'r', encoding='utf-8', errors='ignore') as f:
+                        for line in f:
+                            stripped = line.strip()
+                            # Return the first line that isn't empty and isn't purely decorative
+                            if stripped and not all(c in '-=_+*' for c in stripped):
+                                return stripped
+        except Exception as e:
+            print(f"Error reading FILE_ID.DIZ in {path}: {e}")
+        return None
+
+    def _extract_name_from_docs(self, path):
+        """Extracts potential game name from manual or readme filenames."""
+        doc_extensions = ['.pdf', '.txt', '.doc']
+        exclude_names = ['readme', 'install', 'manual', 'help']
+        try:
+            for filename in os.listdir(path):
+                name, ext = os.path.splitext(filename.lower())
+                if ext in doc_extensions:
+                    # If filename is like "Manual - Jazz Jackrabbit.pdf"
+                    clean_name = name.replace('manual', '').replace('readme', '').replace('-', ' ').strip()
+                    if clean_name and clean_name not in exclude_names:
+                        return clean_name
+        except Exception: pass
+        return None
+
+    def _find_internal_icon(self, path):
+        """Looks for common icon or artwork files inside the game directory."""
+        icon_patterns = ['icon.ico', 'icon.png', 'folder.jpg', 'cover.jpg', 'game.png']
+        try:
+            # Check for exact matches
+            for filename in os.listdir(path):
+                if filename.lower() in icon_patterns:
+                    return os.path.join(path, filename)
+            
+            # Check for any .ico or .png if folder is small
+            for filename in os.listdir(path):
+                if filename.lower().endswith(('.ico', '.png')) and not 'setup' in filename.lower():
+                    return os.path.join(path, filename)
+        except Exception: pass
+        return None
 
     def _find_executable(self, path, game_name):
         """Zoekt naar de meest logische executable in de map."""
@@ -204,6 +301,6 @@ class Crawler:
                     f.write("C:\n")
                     f.write(f"{exec_path}\nexit\n")
             except Exception as e:
-                print(f"Fout bij schrijven van config {cfg_file}: {e}")
+                print(f"Error writing config {cfg_file}: {e}")
         else:
-            print(f"FOUT: DOSBox template niet gevonden op {template}")
+            print(f"ERROR: DOSBox template not found at {template}")
