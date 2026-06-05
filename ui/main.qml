@@ -7,7 +7,7 @@ ApplicationWindow {
     visible: true
     width: 900
     height: 700
-    title: qsTr("GameDotExe - MS-DOS NOSTALGIA")
+    title: qsTr("GameDotExe - DOS NOSTALGIA")
     color: "#0000AA" // Classic DOS Blue
 
     // Load the DOS font from the assets folder
@@ -151,6 +151,65 @@ ApplicationWindow {
                         interval: 500; running: true; repeat: true
                         onTriggered: cursor.visible = !cursor.visible
                     }
+                }
+            }
+        }
+    }
+
+    // --- Pixel-Art Progress Overlay ---
+    Rectangle {
+        id: progressOverlay
+        anchors.fill: parent
+        color: "#80000000"
+        visible: bridge.progressVisible
+        z: 1000 // Altijd bovenop
+
+        Rectangle {
+            width: 400
+            height: 120
+            color: "#AAAAAA"
+            border.color: "white"
+            border.width: 2
+            anchors.centerIn: parent
+
+            ColumnLayout {
+                anchors.fill: parent
+                anchors.margins: 15
+                spacing: 10
+
+                Text {
+                    text: bridge.progressMessage
+                    font.family: dosFont.name
+                    font.pixelSize: 14
+                    color: "black"
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
+                }
+
+                // De progress bar zelf
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 25
+                    color: "black"
+                    border.color: "white"
+                    border.width: 1
+
+                    Rectangle {
+                        id: progressBarInner
+                        height: parent.height - 4
+                        width: (parent.width - 4) * bridge.progressValue
+                        x: 2
+                        y: 2
+                        color: "#55FFFF" // Cyan (Classic DOS progress color)
+                    }
+                }
+
+                Text {
+                    text: Math.floor(bridge.progressValue * 100) + "%"
+                    font.family: dosFont.name
+                    color: "black"
+                    Layout.fillWidth: true
+                    horizontalAlignment: Text.AlignHCenter
                 }
             }
         }

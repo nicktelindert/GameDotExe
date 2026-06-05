@@ -14,6 +14,9 @@ from MainPresenter import MainPresenter
 class QmlBridge(QObject):
     """Bridge klasse om de Presenter met QML te verbinden."""
     gamesChanged = Signal()
+    progressVisibleChanged = Signal()
+    progressValueChanged = Signal()
+    progressMessageChanged = Signal()
 
     def __init__(self, config, db_manager, crawler):
         super().__init__()
@@ -21,13 +24,23 @@ class QmlBridge(QObject):
         self.db_manager = db_manager
         self.crawler = crawler
         self._games = []
-        # De presenter heeft nog steeds een 'view' nodig. 
-        # We kunnen deze bridge als view laten fungeren.
+        self._progress_visible = False
+        self._progress_value = 0.0
+        self._progress_message = ""
         self.presenter = MainPresenter(self, self.config, self.db_manager, self.crawler)
 
     @Property(list, notify=gamesChanged)
     def games(self):
         return self._games
+
+    @Property(bool, notify=progressVisibleChanged)
+    def progressVisible(self): return self._progress_visible
+
+    @Property(float, notify=progressValueChanged)
+    def progressValue(self): return self._progress_value
+
+    @Property(str, notify=progressMessageChanged)
+    def progressMessage(self): return self._progress_message
 
     # --- Implementatie van de View interface voor MainPresenter ---
     def load_games(self, games_list):
@@ -134,8 +147,22 @@ class QmlBridge(QObject):
         filtered_games = [g for g in all_games if text_lower in g.name.lower()]
         self.load_games(filtered_games)
 
-    def show_progress(self, message): pass
-    def hide_progress(self): pass
+    def show_progress(self, message):
+        self._progress_message = message
+        self._progress_visible = True
+        self.progressMessageChanged.emit()
+        self.progressVisibleChanged.emit()
+        QApplication.processEvents() # Forceer UI update
+
+    def set_progress(self, value):
+        self._progress_value = value
+        self.progressValueChanged.emit()
+        QApplication.processEvents() # Forceer UI update
+
+    def hide_progress(self):
+        self._progress_visible = False
+        self.progressVisibleChanged.emit()
+
     def show_info(self, title, message): pass
 
     def show_error(self, title, message):
@@ -191,11 +218,14 @@ class QmlBridge(QObject):
     @Slot()
     def start_iso_install(self):
         from PySide6.QtWidgets import QFileDialog, QInputDialog
-        iso_path, _ = QFileDialog.getOpenFileName(None, "Select ISO File", "", "ISO Files (*.iso)")
+        iso_path, _ = QFileDialog.getOpenFileName(None, QCoreApplication.translate("QmlBridge", "Select Disk Image"), "", "Disk Images (*.iso *.cue *.bin)")
         if not iso_path:
             return
             
-        game_name, ok = QInputDialog.getText(None, "Game Name", "Under what name should the game be installed?")
+        game_name, ok = QInputDialog.getText(None, 
+            QCoreApplication.translate("QmlBridge", "Install Game"), 
+            QCoreApplication.translate("QmlBridge", "Under what name should the game be installed?\n\n(Important: During setup, install the files directly to C:\\)")
+        )
         if ok and game_name:
             self.presenter.install_from_iso(iso_path, game_name)
 

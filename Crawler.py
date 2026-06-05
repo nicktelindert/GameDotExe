@@ -65,42 +65,42 @@ class Crawler:
         cfg_setup_file = os.path.join(game_path, 'dosbox_setup.cfg')
         
         # Heuristic Name Resolution
-        display_name = None
+        # Priority: Cleaned Folder Name (user request), FILE_ID.DIZ, Documentation, INI
+        guesses = [self._clean_folder_name(game_name)]
+        
+        diz_name = self._extract_name_from_diz(game_path)
+        if diz_name: guesses.append(diz_name)
+        
+        doc_name = self._extract_name_from_docs(game_path)
+        if doc_name: guesses.append(doc_name)
+        
         exec_path = None
-        matches = []
-
-        # 1. Check for existing INI override
         if os.path.isfile(ini_file):
             config = configparser.ConfigParser()
             config.read(ini_file)
-            display_name = config.get('Gameinfo', 'name', fallback=None)
+            ini_name = config.get('Gameinfo', 'name', fallback=None)
+            if ini_name: guesses.append(ini_name)
             if config.has_option('Gameinfo', 'exec'):
                 exec_path = config.get('Gameinfo', 'exec')
-            if display_name:
-                matches = self.metadata_provider.search_matches(display_name)
 
-        # 2. Try FILE_ID.DIZ and validate against API
-        if not matches:
-            diz_name = self._extract_name_from_diz(game_path)
-            if diz_name:
-                diz_matches = self.metadata_provider.search_matches(diz_name)
-                if diz_matches:
-                    display_name = diz_name
-                    matches = diz_matches
+        # Exhaust all heuristics to find a definitive match (exactly 1 result)
+        best_matches = []
+        best_display_name = guesses[0]
 
-        # 3. Try searching in manual filenames
-        if not matches:
-            manual_name = self._extract_name_from_docs(game_path)
-            if manual_name:
-                doc_matches = self.metadata_provider.search_matches(manual_name)
-                if doc_matches:
-                    display_name = manual_name
-                    matches = doc_matches
+        for guess in guesses:
+            m = self.metadata_provider.search_matches(guess)
+            if len(m) == 1:
+                # Perfect match found! Use this title and stop searching.
+                best_matches = m
+                best_display_name = m[0]
+                break
+            elif len(m) > 1 and not best_matches:
+                # Found multiple candidates. Remember them, but keep looking for a unique match.
+                best_matches = m
+                best_display_name = guess
 
-        # 4. Fallback to cleaned folder name
-        if not matches:
-            display_name = self._clean_folder_name(game_name)
-            matches = self.metadata_provider.search_matches(display_name)
+        matches = best_matches
+        display_name = best_display_name
 
         if not exec_path:
             exec_path = self._find_executable(game_path, display_name)
@@ -115,14 +115,24 @@ class Crawler:
                 print(f"No executable found in {game_name}, skipping game.")
                 return None
         
-        # Bepaal de iso_path voor de DOSBox config. Als de game al bestaat, gebruik dan de opgeslagen iso_path.
-        current_iso_path = existing_game.iso_path if existing_game and hasattr(existing_game, 'iso_path') else None
+        # Detecteer ISO/CUE in centrale opslag
+        current_iso_path = None
+        iso_storage_dir = os.path.join(os.path.dirname(self.db.db_path), "ISOS", game_name)
+        if os.path.exists(iso_storage_dir):
+            for f in os.listdir(iso_storage_dir):
+                if f.lower().endswith(('.iso', '.cue', '.bin')):
+                    # Prefer .cue if both exist
+                    if not current_iso_path or f.lower().endswith('.cue'):
+                        current_iso_path = os.path.join(iso_storage_dir, f)
+
+        if not current_iso_path and existing_game and hasattr(existing_game, 'iso_path'):
+            current_iso_path = existing_game.iso_path
 
         # We mounten de game_path zelf als C:
         self.create_dosbox_config(game_path, exec_path, cfg_file, iso_path=current_iso_path)
         setup_cmd = None
         if setup_exe:
-            self.create_dosbox_config(game_path, setup_exe, cfg_setup_file)
+            self.create_dosbox_config(game_path, setup_exe, cfg_setup_file, iso_path=current_iso_path)
             setup_cmd = f'dosbox -conf "{cfg_setup_file}"'
 
         # Metadata selectie
@@ -155,8 +165,8 @@ class Crawler:
             if name.lower().endswith(suffix):
                 name = name[:-len(suffix)]
         
-        # Replace underscores and points with spaces
-        cleaned = name.replace('_', ' ').replace('.', ' ').strip()
+        # Replace underscores, hyphens and points with spaces
+        cleaned = name.replace('_', ' ').replace('-', ' ').replace('.', ' ').strip()
         return cleaned
 
     def _extract_name_from_diz(self, path):
@@ -263,7 +273,7 @@ class Crawler:
         cache_path = os.path.join(self.artwork_dir, f"{name}.jpg")
         if not os.path.exists(cache_path):
             try:
-                headers = {'User-Agent': 'GameDotExe/1.0 (MS-DOS Launcher; +https://github.com/nick/GameDotExe)'}
+                headers = {'User-Agent': 'GameDotExe/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
                 r = requests.get(url, stream=True, timeout=5, headers=headers)
                 
                 # Controleer status code
@@ -294,9 +304,11 @@ class Crawler:
             try:
                 shutil.copyfile(template, cfg_file)
                 with open(cfg_file, 'a') as f:
+                    ext = os.path.splitext(iso_path)[1].lower() if iso_path else ""
+                    mount_type = "cdrom" if ext in ['.cue', '.bin'] else "iso"
                     f.write(f"\n\n[autoexec]\nMOUNT C \"{mount_path}\"\n")
                     if iso_path:
-                        f.write(f"IMGMOUNT D \"{iso_path}\" -t iso\n")
+                        f.write(f"IMGMOUNT D \"{iso_path}\" -t {mount_type}\n")
                         f.write("D:\n")
                     f.write("C:\n")
                     f.write(f"{exec_path}\nexit\n")

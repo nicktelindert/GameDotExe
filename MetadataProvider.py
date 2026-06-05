@@ -16,7 +16,7 @@ class PCGamingWikiProvider(MetadataProvider):
 
     def __init__(self, log_path=None, cache_dir=None):
         self.log_path = log_path
-        self.headers = {'User-Agent': 'GameDotExe/1.0 (MS-DOS Launcher; +https://github.com/nick/GameDotExe)'}
+        self.headers = {'User-Agent': 'GameDotExe/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
         self.cache_file = os.path.join(cache_dir, "pcgw_cache.json") if cache_dir else None
         self.cache = {"search": {}, "metadata": {}}
         self._load_cache()
@@ -52,29 +52,37 @@ class PCGamingWikiProvider(MetadataProvider):
 
     def search_matches(self, game_name):
         """Geeft een lijst met mogelijke pagina-titels terug."""
-        if game_name in self.cache["search"]:
-            return self.cache["search"][game_name]
+        # Clean query: replace hyphens, underscores and dots with spaces. 
+        # This significantly improves Opensearch relevance for titles like 'street-fighter-ii'
+        query = game_name.replace('-', ' ').replace('_', ' ').replace('.', ' ')
+
+        if query in self.cache["search"]:
+            return self.cache["search"][query]
 
         try:
+            # Opensearch is title-centric and doesn't support complex filters, 
+            # but it is much better at finding exact games than a full-text search.
             search_params = {
-                "action": "query",
-                "list": "search",
-                "srsearch": f"{game_name}",
+                "action": "opensearch",
+                "search": query,
+                "limit": 10,
+                "namespace": 0,
                 "format": "json"
             }
             res = requests.get(self.BASE_URL, params=search_params, timeout=5, headers=self.headers)
-            self._log(f"Search request URL for '{game_name}'", res.url)
+            self._log(f"Search request URL for '{query}'", res.url)
             
             if res.status_code != 200:
                 self._log(f"API Error: HTTP {res.status_code}", res.text)
                 return []
                 
             response = res.json()
-            self._log(f"Search matches for '{game_name}'", response)
+            self._log(f"Search matches for '{query}'", response)
+
+            # Opensearch format: [search_term, [titles], [descriptions], [urls]]
+            titles = response[1] if isinstance(response, list) and len(response) > 1 else []
             
-            search_results = response.get("query", {}).get("search", [])
-            titles = [result["title"] for result in search_results]
-            self.cache["search"][game_name] = titles
+            self.cache["search"][query] = titles
             self._save_cache()
             return titles
         except Exception as e:
