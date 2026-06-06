@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import platform
 from PySide6.QtCore import QCoreApplication
 
 class MainPresenter:
@@ -127,10 +128,23 @@ class MainPresenter:
             # Start DOSBox interactief
             # Zoek naar gebundelde dosbox
             bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
-            dosbox_cmd = bundled_dosbox if os.path.exists(bundled_dosbox) else "dosbox"
+            dosbox_cmd = bundled_dosbox if os.path.exists(bundled_dosbox) else shutil.which("dosbox")
+
+            # macOS specifieke check
+            if not dosbox_cmd and platform.system() == 'Darwin':
+                mac_paths = [
+                    "/Applications/DOSBox.app/Contents/MacOS/DOSBox",
+                    os.path.expanduser("~/Applications/DOSBox.app/Contents/MacOS/DOSBox"),
+                    "/opt/homebrew/bin/dosbox",
+                    "/usr/local/bin/dosbox"
+                ]
+                for p in mac_paths:
+                    if os.path.exists(p):
+                        dosbox_cmd = p
+                        break
             
-            if not shutil.which(dosbox_cmd) and not os.path.exists(bundled_dosbox):
-                 raise Exception(QCoreApplication.translate("MainPresenter", "DOSBox binary not found."))
+            if not dosbox_cmd:
+                raise Exception(QCoreApplication.translate("MainPresenter", "DOSBox binary not found."))
 
             import subprocess
             subprocess.run([dosbox_cmd, "-conf", cfg_file])

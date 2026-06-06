@@ -1,5 +1,7 @@
 import sys
 import os
+import platform
+import shutil
 from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog, QMessageBox)
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
@@ -172,19 +174,28 @@ class QmlBridge(QObject):
     @Slot(str)
     def launch_game(self, cmd):
         import subprocess
-        import shutil
         import shlex
 
         if not cmd:
             self.show_error(QCoreApplication.translate("QmlBridge", "Launch Error"), QCoreApplication.translate("QmlBridge", "No valid startup command found for this game."))
             return
 
-        # Bepaal het pad naar dosbox (gebundeld of systeem)
+        # Bepaal het pad naar dosbox
         bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
-        if os.path.exists(bundled_dosbox):
-            dosbox_path = bundled_dosbox
-        else:
-            dosbox_path = shutil.which("dosbox")
+        dosbox_path = bundled_dosbox if os.path.exists(bundled_dosbox) else shutil.which("dosbox")
+
+        # macOS specifieke check als de standaard check faalt
+        if not dosbox_path and platform.system() == 'Darwin':
+            mac_paths = [
+                "/Applications/DOSBox.app/Contents/MacOS/DOSBox",
+                os.path.expanduser("~/Applications/DOSBox.app/Contents/MacOS/DOSBox"),
+                "/opt/homebrew/bin/dosbox", # Apple Silicon Homebrew
+                "/usr/local/bin/dosbox"     # Intel Homebrew
+            ]
+            for p in mac_paths:
+                if os.path.exists(p):
+                    dosbox_path = p
+                    break
 
         if not dosbox_path:
             self.show_error(QCoreApplication.translate("QmlBridge", "Error"), QCoreApplication.translate("QmlBridge", "DOSBox not found. Please install 'dosbox' to launch games."))
@@ -249,6 +260,21 @@ class QmlBridge(QObject):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     config = Config()
+
+    # Controleer of er een geldige bibliotheekmap is ingesteld (vooral belangrijk bij de eerste start)
+    library_path = config.get_path()
+    if not library_path or not os.path.exists(library_path):
+        library_path = QFileDialog.getExistingDirectory(
+            None, 
+            QCoreApplication.translate("main", "Select the folder where your DOS games are located"),
+            os.path.expanduser("~")
+        )
+        if library_path:
+            config.set_path(library_path)
+        else:
+            # Zonder een bibliotheekmap kan de launcher niet functioneren
+            sys.exit(0)
+
     db_path = os.path.join(config.config_dir_path, "games.db")
     db_manager = DatabaseManager(db_path)
     artwork_path = os.path.join(config.config_dir_path, "artwork")

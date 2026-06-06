@@ -47,7 +47,8 @@ class Config:
     def set_path(self, path):
         config = configparser.ConfigParser()
         config.read(self.config_file_path)
-        config['generic'] = {}
+        if not config.has_section('generic'):
+            config.add_section('generic')
         config['generic']['path'] = path
         with open(self.config_file_path, 'w') as configfile:
             config.write(configfile)

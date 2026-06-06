@@ -29,7 +29,7 @@ jobs:
   build-macos:
     name: Build macOS App Bundle
     needs: test
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -37,16 +37,20 @@ jobs:
         with:
           python-version: '3.14.5'
       - name: Install dependencies
-        run: pip install PySide6 requests pyinstaller
+        run: pip install PySide6 requests pyinstaller macholib
       - name: Build macOS App
         run: |
           chmod +x build_macos.sh
           ./build_macos.sh
+      - name: Create Zip Archive
+        run: |
+          cd dist
+          zip -r GameDotExe-macOS.zip GameDotExe.app
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GameDotExe-macOS.app
-          path: dist/GameDotExe.app
+          name: GameDotExe-macOS
+          path: dist/GameDotExe-macOS.zip
 
   build-linux:
     name: Build Linux AppImage
