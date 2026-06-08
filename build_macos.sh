@@ -9,14 +9,26 @@ MAIN_SCRIPT="main.py"
 echo "--- Start macOS Build voor ${APP_NAME} ---"
 
 # Voer PyInstaller uit
-# --windowed zorgt voor een .app bundle en voorkomt een terminal venster
-# --noconfirm overschrijft oude builds
-# --target-arch universal2 probeert een build te maken voor zowel Intel als Apple Silicon
+# Optimalisaties:
+# 1. --exclude-module: Voorkom dat zware, ongebruikte Qt modules worden meegeleverd.
+# 2. Architectuur: 'universal2' is handig maar zwaar. Overweeg je eigen architectuur voor een lichtere build.
 pyinstaller --noconfirm --windowed \
     --name "${APP_NAME}" \
+    --exclude-module PySide6.QtWebEngineCore \
+    --exclude-module PySide6.QtWebEngineWidgets \
+    --exclude-module PySide6.QtDesigner \
+    --exclude-module PySide6.Qt3DCore \
+    --exclude-module PySide6.QtCharts \
+    --exclude-module PySide6.QtSql \
+    --exclude-module PySide6.QtTest \
+    --exclude-module PySide6.QtMultimedia \
+    --exclude-module PySide6.QtBluetooth \
+    --exclude-module PySide6.QtPositioning \
+    --exclude-module tkinter \
+    --exclude-module unittest \
     --add-data "ui:ui" \
     --add-data "assets:assets" \
-    --add-data "core/known_dos_games.json:." \
+    --add-data "core/known_dos_games.json:core" \
     --target-arch universal2 \
     "${MAIN_SCRIPT}"
 

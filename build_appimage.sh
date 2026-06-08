@@ -40,6 +40,18 @@ fi
 echo "--- Stap 1: Bundelen met PyInstaller ---"
 # We voegen de data bestanden direct toe aan de PyInstaller bundle
 pyinstaller --noconfirm --onefile --windowed \
+    --exclude-module PySide6.QtWebEngineCore \
+    --exclude-module PySide6.QtWebEngineWidgets \
+    --exclude-module PySide6.QtDesigner \
+    --exclude-module PySide6.Qt3DCore \
+    --exclude-module PySide6.QtCharts \
+    --exclude-module PySide6.QtSql \
+    --exclude-module PySide6.QtTest \
+    --exclude-module PySide6.QtMultimedia \
+    --exclude-module PySide6.QtBluetooth \
+    --exclude-module PySide6.QtPositioning \
+    --exclude-module tkinter \
+    --exclude-module unittest \
     --add-data "assets:assets" \
     ${DOSBOX_BIN:+--add-binary "$DOSBOX_BIN:."} \
     --add-data "ui:ui" \

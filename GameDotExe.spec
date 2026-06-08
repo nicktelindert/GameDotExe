@@ -5,12 +5,12 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('ui', 'ui'), ('assets', 'assets'), ('known_dos_games.json', '.')],
+    datas=[('ui', 'ui'), ('assets', 'assets'), ('core/known_dos_games.json', 'core')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['PySide6.QtWebEngineCore', 'PySide6.QtWebEngineWidgets', 'PySide6.QtDesigner', 'PySide6.Qt3DCore', 'PySide6.QtCharts', 'PySide6.QtSql', 'PySide6.QtTest', 'PySide6.QtMultimedia', 'PySide6.QtBluetooth', 'PySide6.QtPositioning', 'tkinter', 'unittest'],
     noarchive=False,
     optimize=0,
 )
@@ -29,7 +29,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch='universal2',
     codesign_identity=None,
     entitlements_file=None,
 )
