@@ -1,8 +1,11 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import unittest
 from pyfakefs.fake_filesystem_unittest import TestCase
 from unittest.mock import MagicMock, patch
 from Crawler import Crawler
-import os
 
 class TestCrawler(TestCase):
     def setUp(self):

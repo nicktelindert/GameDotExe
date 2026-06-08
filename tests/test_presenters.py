@@ -1,7 +1,10 @@
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import unittest
 from unittest.mock import MagicMock, patch
 from MainPresenter import MainPresenter
-import os
 
 class TestMainPresenter(unittest.TestCase):
     def setUp(self):
@@ -34,23 +37,12 @@ class TestMainPresenter(unittest.TestCase):
         # Test of een game correct wordt verwijderd na bevestiging
         mock_exists.return_value = True
         self.mock_config.get_path.return_value = "/games"
-        # We moeten db_path instellen omdat delete_game dit nu gebruikt voor ISO opruimen
-        self.mock_db.db_path = "/config/games.db"
-
-        game_info = MagicMock()
-        game_info.name = "TestGame"
-        game_info.folder_name = "test_game"
-        
-        # Act
+        self.mock_db.db_path = "/config/games.db" # Mock db_path for ISO cleanup
+        game_info = MagicMock(folder_name="test_game")
         self.presenter.delete_game(game_info)
-        
-        # Assert
         self.mock_db.delete_game.assert_called_with("test_game")
-
-        # Er worden nu twee mappen verwijderd: de game map en de ISO map
         mock_rmtree.assert_any_call(os.path.join("/games", "test_game"))
         mock_rmtree.assert_any_call(os.path.join("/config", "ISOS", "test_game"))
-
         self.mock_view.load_games.assert_called()
 
 if __name__ == '__main__':

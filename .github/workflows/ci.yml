@@ -24,7 +24,9 @@ jobs:
         run: |
           pip install PySide6 requests pyfakefs
       - name: Run All Tests
-        run: python -m unittest discover .
+        run: sh run_tests.sh
+
+
 
   build-macos:
     name: Build macOS App Bundle
