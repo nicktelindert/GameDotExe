@@ -16,7 +16,7 @@ class PCGamingWikiProvider(MetadataProvider):
 
     def __init__(self, log_path=None, cache_dir=None):
         self.log_path = log_path
-        self.headers = {'User-Agent': 'GameDotExe/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
+        self.headers = {'User-Agent': f'{QCoreApplication.applicationName()}/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
         self.cache_file = os.path.join(cache_dir, "pcgw_cache.json") if cache_dir else None
         self.cache = {"search": {}, "metadata": {}}
         self._load_cache()

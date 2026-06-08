@@ -4,6 +4,7 @@ import shutil
 import pathlib
 import sys
 import requests
+from PySide6.QtCore import QCoreApplication
 from GameInfo import GameInfo
 from MetadataProvider import PCGamingWikiProvider
 from DosGameDatabase import DosGameDatabase
@@ -273,7 +274,7 @@ class Crawler:
         cache_path = os.path.join(self.artwork_dir, f"{name}.jpg")
         if not os.path.exists(cache_path):
             try:
-                headers = {'User-Agent': 'GameDotExe/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
+                headers = {'User-Agent': f'{QCoreApplication.applicationName()}/1.0 (DOS Launcher; +https://github.com/nick/GameDotExe)'}
                 r = requests.get(url, stream=True, timeout=5, headers=headers)
                 
                 # Controleer status code

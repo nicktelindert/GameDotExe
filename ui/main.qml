@@ -7,7 +7,7 @@ ApplicationWindow {
     visible: true
     width: 900
     height: 700
-    title: qsTr("GameDotExe - DOS NOSTALGIA")
+    title: Qt.application.name + " - " + qsTr("DOSBOX GAME LAUNCHER")
     color: "#0000AA" // Classic DOS Blue
 
     // Load the DOS font from the assets folder
@@ -37,7 +37,8 @@ ApplicationWindow {
                 
                 TextField {
                     id: searchField
-                    placeholderText: "SEARCH_GAME.EXE..."
+                    placeholderText: "SEARCH FOR A GAME..."
+                    placeholderTextColor: "#88FFFFFF" // Semi-transparant wit voor zichtbaarheid op zwart
                     Layout.fillWidth: true
                     font.pixelSize: 20
                     renderType: "QtRendering" // Houdt pixels scherp

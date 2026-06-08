@@ -107,7 +107,7 @@ class MainPresenter:
                 f.write(f"MOUNT C \"{game_path}\"\n")
                 f.write(f"IMGMOUNT D \"{active_iso_path}\" -t {mount_type}\n")
                 f.write("ECHO --------------------------------------------------\n")
-                f.write("ECHO  GAMEDOTEXE ISO INSTALLER\n")
+                f.write(f"ECHO  {QCoreApplication.applicationName().upper()} ISO INSTALLER\n")
                 f.write("ECHO --------------------------------------------------\n")
                 f.write("ECHO  IMPORTANT: When the installer asks for a path,\n")
                 f.write("ECHO  ALWAYS install the game directly to C:\\\n")

@@ -5,6 +5,7 @@ import shutil
 from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog, QMessageBox)
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication
 
 from Config import Config
@@ -259,6 +260,10 @@ class QmlBridge(QObject):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    QQuickStyle.setStyle("Fusion")
+    app.setApplicationName("GameDotExe")
+    app.setOrganizationName("GameDotExe")
+    app.setOrganizationDomain("gamedotexe.org")
     config = Config()
 
     # Controleer of er een geldige bibliotheekmap is ingesteld (vooral belangrijk bij de eerste start)
