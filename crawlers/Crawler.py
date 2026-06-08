@@ -4,10 +4,10 @@ import shutil
 import pathlib
 import sys
 import requests
-from PySide6.QtCore import QCoreApplication
-from GameInfo import GameInfo
-from MetadataProvider import PCGamingWikiProvider
-from DosGameDatabase import DosGameDatabase
+from PySide6.QtCore import QCoreApplication # Keep this for applicationName
+from core.GameInfo import GameInfo
+from crawlers.MetadataProvider import PCGamingWikiProvider
+from core.DosGameDatabase import DosGameDatabase
 
 class Crawler:
     def __init__(self, path, db_manager, metadata_provider=None, log_path=None, artwork_dir=None):

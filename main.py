@@ -8,11 +8,11 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication
 
-from Config import Config
-from Crawler import Crawler
-from GameInfo import GameInfo # Nodig om GameInfo objecten te reconstrueren
-from DatabaseManager import DatabaseManager
-from MainPresenter import MainPresenter
+from core.Config import Config
+from crawlers.Crawler import Crawler
+from core.GameInfo import GameInfo # Nodig om GameInfo objecten te reconstrueren
+from core.DatabaseManager import DatabaseManager
+from presenters.MainPresenter import MainPresenter
 
 class QmlBridge(QObject):
     """Bridge klasse om de Presenter met QML te verbinden."""

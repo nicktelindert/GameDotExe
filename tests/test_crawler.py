@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 import unittest
 from pyfakefs.fake_filesystem_unittest import TestCase
 from unittest.mock import MagicMock, patch
-from Crawler import Crawler
+from crawlers.Crawler import Crawler
 
 class TestCrawler(TestCase):
     def setUp(self):
@@ -40,7 +40,7 @@ class TestCrawler(TestCase):
         self.fs.create_file(os.path.join(game_dir, "SETUP.EXE"))
         self.fs.create_file(os.path.join(game_dir, "JAZZ.EXE"))
         
-        with patch('DosGameDatabase.DosGameDatabase.get_executable', return_value=None):
+        with patch('core.DosGameDatabase.DosGameDatabase.get_executable', return_value=None):
             # "Jazz" begint met 'J', dus SETUP.EXE moet genegeerd worden (begint met 'S')
             result = self.crawler._find_executable(game_dir, "Jazz")
             self.assertEqual(result, "JAZZ.EXE")

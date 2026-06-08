@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import unittest
 from unittest.mock import MagicMock, patch
-from MainPresenter import MainPresenter
+from presenters.MainPresenter import MainPresenter
 
 class TestMainPresenter(unittest.TestCase):
     def setUp(self):

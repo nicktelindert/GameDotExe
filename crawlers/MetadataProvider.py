@@ -1,7 +1,7 @@
 import requests
 import os
 import json
-import datetime
+from datetime import datetime
 from PySide6.QtCore import QCoreApplication
 
 class MetadataProvider:
@@ -38,9 +38,10 @@ class PCGamingWikiProvider(MetadataProvider):
     def _log(self, message, data):
         if not self.log_path:
             return
+        # Use a try-except block to prevent logging errors from crashing the app
         try:
-            with open(self.log_path, "a") as f:
-                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            with open(self.log_path, "a", encoding="utf-8") as f:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 f.write(f"[{timestamp}] {message}:\n")
                 if isinstance(data, (dict, list)):
                     f.write(json.dumps(data, indent=2))

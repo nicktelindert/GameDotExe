@@ -43,7 +43,7 @@ pyinstaller --noconfirm --onefile --windowed \
     --add-data "assets:assets" \
     ${DOSBOX_BIN:+--add-binary "$DOSBOX_BIN:."} \
     --add-data "ui:ui" \
-    --add-data "known_dos_games.json:." \
+    --add-data "core/known_dos_games.json:core" \
     --name "${APP_NAME}" "${MAIN_SCRIPT}"
 
 if [ $? -ne 0 ]; then

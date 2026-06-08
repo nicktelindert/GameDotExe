@@ -4,6 +4,11 @@ import sys
 import platform
 from PySide6.QtCore import QCoreApplication
 
+# Import from new package structure
+from core.Config import Config
+from core.DatabaseManager import DatabaseManager
+from crawlers.Crawler import Crawler
+
 class MainPresenter:
     def __init__(self, view, config, db_manager, crawler):
         self.view = view

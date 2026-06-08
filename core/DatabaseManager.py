@@ -1,6 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
-from GameInfo import GameInfo
+from core.GameInfo import GameInfo
 
 class DatabaseManager:
     def __init__(self, db_path):
