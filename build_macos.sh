@@ -16,7 +16,7 @@ pyinstaller --noconfirm --windowed \
     --name "${APP_NAME}" \
     --add-data "ui:ui" \
     --add-data "assets:assets" \
-    --add-data "known_dos_games.json:." \
+    --add-data "core/known_dos_games.json:." \
     --target-arch universal2 \
     "${MAIN_SCRIPT}"
 
