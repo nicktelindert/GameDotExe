@@ -79,7 +79,7 @@ To ensure application stability, we use unit tests. These test the logic of the 
 Use the standard Python `unittest` framework to automatically discover and run all tests in the project:
 
 ```bash
-python -m unittest discover -p 'test_*.py'
+sh run_tests.sh
 ```
 
 **Requirements for testing:**
