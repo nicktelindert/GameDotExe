@@ -270,4 +270,5 @@ if __name__ == "__main__":
     
     # Forceer opruimen engine voor Bridge om null-pointer errors in QML te voorkomen
     del engine
+    db_manager.close()
     sys.exit(exit_code)

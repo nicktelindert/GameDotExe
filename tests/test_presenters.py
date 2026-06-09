@@ -38,7 +38,8 @@ class TestMainPresenter(unittest.TestCase):
         mock_exists.return_value = True
         self.mock_config.get_path.return_value = "/games"
         self.mock_db.db_path = "/config/games.db" # Mock db_path for ISO cleanup
-        game_info = MagicMock(folder_name="test_game")
+        game_info = MagicMock(folder_name="test_game", safe_folder_name="test_game")
+        
         self.presenter.delete_game(game_info)
         self.mock_db.delete_game.assert_called_with("test_game")
         mock_rmtree.assert_any_call(os.path.join("/games", "test_game"))

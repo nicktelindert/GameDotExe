@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import inspect
 from core.GameInfo import GameInfo
 
 class DatabaseManager:
@@ -10,6 +11,10 @@ class DatabaseManager:
         self.conn = None
         self._connect()
         self._migrate_database()
+
+    def __del__(self):
+        """Zorgt ervoor dat de verbinding wordt gesloten wanneer het object wordt vernietigd."""
+        self.close()
 
     def _connect(self):
         self.conn = sqlite3.connect(self.db_path)
@@ -114,13 +119,13 @@ class DatabaseManager:
             if 'display_name' in row_dict and 'name' not in row_dict:
                 row_dict['name'] = row_dict.pop('display_name')
 
-            # Filter kolommen die niet in de __init__ van GameInfo voorkomen
-            import inspect
+            # Filter kolommen die niet in de __init__ van GameInfo voorkomen om TypeErrors te voorkomen
             sig = inspect.signature(GameInfo.__init__)
             valid_params = [p.name for p in sig.parameters.values() if p.name != 'self']
             filtered_dict = {k: v for k, v in row_dict.items() if k in valid_params}
             
             return GameInfo(**filtered_dict)
+
         return None
 
     def get_all_games(self):
