@@ -105,6 +105,7 @@ Once these tools are present, you can generate the AppImage package by running t
 bash build_appimage.sh
 ```
 
-### LATER
-- Windows & Mac support
-- Auto download DOSBOX when it is not installed?
+
+## TODO
+- Windows version
+- Move from universal build to ARM64 build on MACOS. (Universal builds are slow and way too big).
