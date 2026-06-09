@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog, QMessage
 from PySide6.QtGui import QIcon
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuickControls2 import QQuickStyle
-from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication
+from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication, QUrl
 
 from core.Config import Config
 from crawlers.Crawler import Crawler
@@ -174,66 +174,16 @@ class QmlBridge(QObject):
 
     @Slot(str)
     def launch_game(self, cmd):
-        import subprocess
-        import shlex
-
-        if not cmd:
-            self.show_error(QCoreApplication.translate("QmlBridge", "Launch Error"), QCoreApplication.translate("QmlBridge", "No valid startup command found for this game."))
-            return
-
-        # Bepaal het pad naar dosbox
-        bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
-        dosbox_path = bundled_dosbox if os.path.exists(bundled_dosbox) else shutil.which("dosbox")
-
-        # macOS specifieke check als de standaard check faalt
-        if not dosbox_path and platform.system() == 'Darwin':
-            mac_paths = [
-                "/Applications/DOSBox.app/Contents/MacOS/DOSBox",
-                os.path.expanduser("~/Applications/DOSBox.app/Contents/MacOS/DOSBox"),
-                "/opt/homebrew/bin/dosbox", # Apple Silicon Homebrew
-                "/usr/local/bin/dosbox"     # Intel Homebrew
-            ]
-            for p in mac_paths:
-                if os.path.exists(p):
-                    dosbox_path = p
-                    break
-
-        if not dosbox_path:
-            self.show_error(QCoreApplication.translate("QmlBridge", "Error"), QCoreApplication.translate("QmlBridge", "DOSBox not found. Please install 'dosbox' to launch games."))
-            return
-
-        # Parse het commando. We verwachten iets als: dosbox -conf "/pad/naar/dosbox.cfg"
-        try:
-            args = shlex.split(cmd)
-            # Vervang 'dosbox' (het eerste argument) door het volledige pad
-            if args[0] == "dosbox":
-                args[0] = dosbox_path
-            
-            # Controleer of de config file die in het commando staat wel echt bestaat
-            if "-conf" in args:
-                conf_idx = args.index("-conf") + 1
-                if conf_idx < len(args) and not os.path.exists(args[conf_idx]):
-                    self.show_error(QCoreApplication.translate("QmlBridge", "Config Error"), 
-                                    QCoreApplication.translate("QmlBridge", "Configuration file not found:\n{0}").format(args[conf_idx]))
-                    return
-
-        except Exception as e:
-            self.show_error(QCoreApplication.translate("QmlBridge", "Command Error"), QCoreApplication.translate("QmlBridge", "Error processing command: {0}").format(str(e)))
-            return
-
-        try:
-            # Start het proces zonder shell=True voor betere betrouwbaarheid
-            subprocess.Popen(args)
-        except Exception as e:
-            self.show_error(QCoreApplication.translate("QmlBridge", "Launch Error"), QCoreApplication.translate("QmlBridge", "Could not start DOSBox: {0}").format(str(e)))
-
+        """Delegeert de launch logica naar de presenter."""
+        self.presenter.launch_game(cmd)
+    
     @Slot()
     def start_iso_install(self):
-        from PySide6.QtWidgets import QFileDialog, QInputDialog
+        """Delegeert installatie naar de presenter."""
+        # De QFileDialog kan hier blijven of via de presenter aangeroepen worden
         iso_path, _ = QFileDialog.getOpenFileName(None, QCoreApplication.translate("QmlBridge", "Select Disk Image"), "", "Disk Images (*.iso *.cue *.bin)")
-        if not iso_path:
-            return
-            
+        if not iso_path: return
+
         game_name, ok = QInputDialog.getText(None, 
             QCoreApplication.translate("QmlBridge", "Install Game"), 
             QCoreApplication.translate("QmlBridge", "Under what name should the game be installed?\n\n(Important: During setup, install the files directly to C:\\)")
@@ -257,6 +207,8 @@ class QmlBridge(QObject):
     @Slot(str)
     def unignore_folder(self, folder_name):
         self.presenter.unignore_folder(folder_name)
+
+from PySide6.QtQml import qmlRegisterSingletonInstance
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -287,10 +239,11 @@ if __name__ == "__main__":
 
     bridge = QmlBridge(config, db_manager, crawler)
 
+    # Registreer de Bridge als een Singleton voor QML
+    # Gebruik een URI (bijv. "GameDotExe") en een versie
+    qmlRegisterSingletonInstance(QmlBridge, "GameDotExe", 1,0, "Bridge", bridge)
+
     engine = QQmlApplicationEngine()
-    # Maak de bridge beschikbaar in QML
-    engine.rootContext().setContextProperty("bridge", bridge)
-    engine._bridge = bridge  # Voorkom Garbage Collection van het bridge object
     
     # Bepaal de basispad voor resources, afhankelijk van of het een PyInstaller bundle is
     if getattr(sys, 'frozen', False):
@@ -304,8 +257,8 @@ if __name__ == "__main__":
     # Stel het icon pad correct in t.o.v. de bundle root om runtime errors te voorkomen
     app.setWindowIcon(QIcon(os.path.join(application_base_path, "assets", "default_icon.svg")))
 
-    # Laad het QML bestand
-    qml_file = os.path.join(application_base_path, "ui", "main.qml")
+    # Laad het QML bestand uit de views map
+    qml_file = os.path.join(application_base_path, "views", "main.qml")
     engine.load(qml_file)
 
     if not engine.rootObjects():
@@ -314,4 +267,8 @@ if __name__ == "__main__":
     # Initiële load
     bridge.presenter.initial_load()
 
-    sys.exit(app.exec())
+    exit_code = app.exec()
+    
+    # Forceer opruimen engine voor Bridge om null-pointer errors in QML te voorkomen
+    del engine
+    sys.exit(exit_code)

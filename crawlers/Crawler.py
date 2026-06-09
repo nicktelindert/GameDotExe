@@ -4,19 +4,23 @@ import shutil
 import pathlib
 import sys
 import requests
+import re
 from PySide6.QtCore import QCoreApplication # Keep this for applicationName
 from core.GameInfo import GameInfo
 from crawlers.MetadataProvider import PCGamingWikiProvider
-from core.DosGameDatabase import DosGameDatabase
 
 class Crawler:
     def __init__(self, path, db_manager, metadata_provider=None, log_path=None, artwork_dir=None):
         self.base_path = path
         self.db = db_manager
         
-        # Gebruik het bundle-pad indien bevroren (PyInstaller), anders het script-pad
-        base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-        self.assets_dir = os.path.join(base_dir, "assets")
+        # Bepaal de project root: bij PyInstaller is dit _MEIPASS, in dev mode de map boven 'crawlers'
+        if getattr(sys, 'frozen', False):
+            project_root = sys._MEIPASS
+        else:
+            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            
+        self.assets_dir = os.path.join(project_root, "assets")
         
         # Gebruik de meegegeven artwork_dir of val terug op de assets dir
         self.artwork_dir = artwork_dir or self.assets_dir
@@ -118,7 +122,8 @@ class Crawler:
         
         # Detecteer ISO/CUE in centrale opslag
         current_iso_path = None
-        iso_storage_dir = os.path.join(os.path.dirname(self.db.db_path), "ISOS", game_name)
+        safe_folder_name = self._get_safe_filename(game_name)
+        iso_storage_dir = os.path.join(os.path.dirname(self.db.db_path), "ISOS", safe_folder_name)
         if os.path.exists(iso_storage_dir):
             for f in os.listdir(iso_storage_dir):
                 if f.lower().endswith(('.iso', '.cue', '.bin')):
@@ -149,7 +154,8 @@ class Crawler:
         # Artwork afhandeling
         icon_path = os.path.join(self.assets_dir, "default_icon.svg")
         if meta["icon_url"]:
-            icon_path = self._download_artwork(game_name, meta["icon_url"])
+            safe_name = self._get_safe_filename(game_name)
+            icon_path = self._download_artwork(safe_name, meta["icon_url"])
         else:
             # Fallback: check for local icon in game folder
             local_icon = self._find_internal_icon(game_path)
@@ -169,6 +175,11 @@ class Crawler:
         # Replace underscores, hyphens and points with spaces
         cleaned = name.replace('_', ' ').replace('-', ' ').replace('.', ' ').strip()
         return cleaned
+
+    def _get_safe_filename(self, name):
+        """Zorgt dat een gamenaam veilig is om als bestandsnaam te gebruiken op alle OS'en."""
+        # Verwijder alles wat niet een letter, cijfer, spatie, punt of underscore is
+        return re.sub(r'[^\w\s\.-]', '', name).strip()
 
     def _extract_name_from_diz(self, path):
         """Tries to find and parse FILE_ID.DIZ for a clean game title."""
@@ -218,13 +229,6 @@ class Crawler:
 
     def _find_executable(self, path, game_name):
         """Zoekt naar de meest logische executable in de map."""
-        # Stap 1: Check de bekende database
-        known_exe = DosGameDatabase.get_executable(game_name)
-        if known_exe:
-            potential_path = os.path.join(path, known_exe)
-            if os.path.exists(potential_path):
-                return known_exe
-
         allowed_extensions = ['.exe', '.com', '.bat']
         blacklist_terms = ['setup', 'install', 'setsound', 'uninstall'] # Removed duplicate 'install'
         first_letter = game_name[0].lower()

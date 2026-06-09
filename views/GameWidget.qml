@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import GameDotExe 1.0
 
 Rectangle {
     id: root
@@ -92,7 +93,7 @@ Rectangle {
                 anchors.fill: parent
                 onClicked: {
                     root.clicked() // Zorg dat de kaart ook geselecteerd wordt bij het starten
-                    bridge.launch_game(root.command)
+                    Bridge.launch_game(root.command)
                 }
             }
         }
@@ -127,24 +128,24 @@ Rectangle {
         MenuItem {
             text: qsTr("Run Setup")
             enabled: !!gameModelData.setup_cmd
-            onTriggered: bridge.launch_game(gameModelData.setup_cmd)
+            onTriggered: Bridge.launch_game(gameModelData.setup_cmd)
         }
 
         MenuItem {
             text: qsTr("Ignore Folder")
             visible: !root.isIgnored
-            onTriggered: bridge.ignore_folder(gameModelData.folder)
+            onTriggered: Bridge.ignore_folder(gameModelData.folder)
         }
 
         MenuItem {
             text: qsTr("Allow Scanning")
             visible: root.isIgnored
-            onTriggered: bridge.unignore_folder(gameModelData.folder)
+            onTriggered: Bridge.unignore_folder(gameModelData.folder)
         }
 
         MenuItem {
             text: qsTr("Refresh Metadata")
-            onTriggered: bridge.force_scan(gameModelData.folder)
+            onTriggered: Bridge.force_scan(gameModelData.folder)
         }
 
         MenuItem {

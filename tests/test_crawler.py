@@ -40,10 +40,9 @@ class TestCrawler(TestCase):
         self.fs.create_file(os.path.join(game_dir, "SETUP.EXE"))
         self.fs.create_file(os.path.join(game_dir, "JAZZ.EXE"))
         
-        with patch('core.DosGameDatabase.DosGameDatabase.get_executable', return_value=None):
-            # "Jazz" begint met 'J', dus SETUP.EXE moet genegeerd worden (begint met 'S')
-            result = self.crawler._find_executable(game_dir, "Jazz")
-            self.assertEqual(result, "JAZZ.EXE")
+        # "Jazz" begint met 'J', dus SETUP.EXE moet genegeerd worden (begint met 'S')
+        result = self.crawler._find_executable(game_dir, "Jazz")
+        self.assertEqual(result, "JAZZ.EXE")
 
     def test_create_dosbox_config(self):
         game_path = "/fake/path/testgame"

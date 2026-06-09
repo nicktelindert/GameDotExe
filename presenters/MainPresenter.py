@@ -2,12 +2,12 @@ import os
 import shutil
 import sys
 import platform
+import subprocess
+import shlex
 from PySide6.QtCore import QCoreApplication
 
 # Import from new package structure
-from core.Config import Config
-from core.DatabaseManager import DatabaseManager
-from crawlers.Crawler import Crawler
+# (Imports blijven gelijk)
 
 class MainPresenter:
     def __init__(self, view, config, db_manager, crawler):
@@ -23,6 +23,58 @@ class MainPresenter:
             exe_selection_callback=self.view.prompt_exe_selection
         )
         self.view.load_games(self.crawler.get_list())
+
+    def _get_dosbox_path(self):
+        """Centrale methode om de DOSBox executable te vinden op basis van OS."""
+        exe_ext = ".exe" if platform.system() == "Windows" else ""
+        bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), f'dosbox{exe_ext}')
+        
+        dosbox_path = bundled_dosbox if os.path.exists(bundled_dosbox) else shutil.which("dosbox")
+
+        if not dosbox_path and platform.system() == 'Darwin':
+            mac_paths = [
+                "/Applications/DOSBox.app/Contents/MacOS/DOSBox",
+                os.path.expanduser("~/Applications/DOSBox.app/Contents/MacOS/DOSBox"),
+                "/opt/homebrew/bin/dosbox",
+                "/usr/local/bin/dosbox"
+            ]
+            for p in mac_paths:
+                if os.path.exists(p):
+                    dosbox_path = p
+                    break
+        return dosbox_path
+
+    def launch_game(self, cmd):
+        """Start de game via DOSBox met platform-specifieke paden en configuratie."""
+        if not cmd:
+            self.view.show_error(QCoreApplication.translate("MainPresenter", "Launch Error"), 
+                                 QCoreApplication.translate("MainPresenter", "No valid startup command found for this game."))
+            return
+
+        dosbox_path = self._get_dosbox_path()
+        if not dosbox_path:
+            self.view.show_error(QCoreApplication.translate("MainPresenter", "Error"), 
+                                 QCoreApplication.translate("MainPresenter", "DOSBox not found. Please install 'dosbox' to launch games."))
+            return
+
+        # 2. Parse het commando en valideer configuratie
+        try:
+            args = shlex.split(cmd)
+            if args[0] == "dosbox":
+                args[0] = dosbox_path
+            
+            if "-conf" in args:
+                conf_idx = args.index("-conf") + 1
+                if conf_idx < len(args) and not os.path.exists(args[conf_idx]):
+                    self.view.show_error(QCoreApplication.translate("MainPresenter", "Config Error"), 
+                                         QCoreApplication.translate("MainPresenter", "Configuration file not found:\n{0}").format(args[conf_idx]))
+                    return
+
+            # 3. Start het proces
+            subprocess.Popen(args)
+        except Exception as e:
+            self.view.show_error(QCoreApplication.translate("MainPresenter", "Launch Error"), 
+                                 QCoreApplication.translate("MainPresenter", "Could not start DOSBox: {0}").format(str(e)))
 
     def force_scan(self, target_folder=None):
         """Handmatige herscan van de library."""
@@ -67,8 +119,9 @@ class MainPresenter:
 
             # 2. ISO/CUE naar centrale opslag kopiëren
             # We gebruiken de config map als basis (gebaseerd op locatie van de DB)
+            safe_game_name = self.crawler._get_safe_filename(game_name)
             config_dir = os.path.dirname(self.db.db_path)
-            iso_storage_root = os.path.join(config_dir, "ISOS", game_name)
+            iso_storage_root = os.path.join(config_dir, "ISOS", safe_game_name)
             os.makedirs(iso_storage_root, exist_ok=True)
 
             original_iso_name = os.path.basename(iso_path)
@@ -130,28 +183,12 @@ class MainPresenter:
                 f.write("PAUSE\n")
                 f.write("EXIT\n")
 
-            # Start DOSBox interactief
-            # Zoek naar gebundelde dosbox
-            bundled_dosbox = os.path.join(getattr(sys, '_MEIPASS', ''), 'dosbox')
-            dosbox_cmd = bundled_dosbox if os.path.exists(bundled_dosbox) else shutil.which("dosbox")
-
-            # macOS specifieke check
-            if not dosbox_cmd and platform.system() == 'Darwin':
-                mac_paths = [
-                    "/Applications/DOSBox.app/Contents/MacOS/DOSBox",
-                    os.path.expanduser("~/Applications/DOSBox.app/Contents/MacOS/DOSBox"),
-                    "/opt/homebrew/bin/dosbox",
-                    "/usr/local/bin/dosbox"
-                ]
-                for p in mac_paths:
-                    if os.path.exists(p):
-                        dosbox_cmd = p
-                        break
+            # Gebruik de centrale helper voor DOSBox detectie
+            dosbox_cmd = self._get_dosbox_path()
             
             if not dosbox_cmd:
                 raise Exception(QCoreApplication.translate("MainPresenter", "DOSBox binary not found."))
 
-            import subprocess
             subprocess.run([dosbox_cmd, "-conf", cfg_file])
 
             # Ruim tijdelijke config op

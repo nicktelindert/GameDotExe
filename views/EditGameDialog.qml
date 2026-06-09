@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import GameDotExe 1.0
 
 Dialog {
     id: root
@@ -70,7 +71,7 @@ Dialog {
                         text: "..."
                         width: 30
                         onClicked: {
-                            let res = bridge.browse_executable(root.currentGame.folder)
+                            let res = Bridge.browse_executable(root.currentGame.folder)
                             if (res !== "") editExecInput.text = res
                         }
                     }
@@ -91,7 +92,7 @@ Dialog {
                         text: "..."
                         width: 30
                         onClicked: {
-                            let res = bridge.browse_executable(root.currentGame.folder)
+                            let res = Bridge.browse_executable(root.currentGame.folder)
                             if (res !== "") editSetupInput.text = res
                         }
                     }
@@ -112,7 +113,7 @@ Dialog {
                         text: "..."
                         width: 30
                         onClicked: {
-                            let res = bridge.browse_image()
+                            let res = Bridge.browse_image()
                             if (res !== "") editIconInput.text = res
                         }
                     }
@@ -161,7 +162,7 @@ Dialog {
                     "icon_path": editIconInput.text,
                     "iso_path": root.currentGame.iso_path
                 }
-                bridge.save_game_properties(data)
+                Bridge.save_game_properties(data)
                 root.close()
             }
             background: Rectangle { color: "#AAAAAA" }

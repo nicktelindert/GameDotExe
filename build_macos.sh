@@ -26,17 +26,12 @@ pyinstaller --noconfirm --windowed \
     --exclude-module PySide6.QtPositioning \
     --exclude-module tkinter \
     --exclude-module unittest \
-    --add-data "ui:ui" \
+    --add-data "views:views" \
     --add-data "assets:assets" \
-    --add-data "core/known_dos_games.json:core" \
     --target-arch universal2 \
     "${MAIN_SCRIPT}"
 
 if [ $? -eq 0 ]; then
-    echo "--- Ad-hoc signing de bundle ---"
-    # Dit helpt om de 'damaged' melding te voorkomen op je eigen systeem
-    codesign --force --deep --sign - "dist/${APP_NAME}.app"
-
     echo "--- Build voltooid! ---"
     echo "De .app bundle staat in de 'dist/' map."
 else

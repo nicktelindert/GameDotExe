@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import GameDotExe 1.0
 
 ApplicationWindow {
     id: mainWindow
@@ -44,12 +45,12 @@ ApplicationWindow {
                     renderType: "QtRendering" // Houdt pixels scherp
                     color: "white"
                     background: Rectangle { color: "black"; border.color: "#55FFFF" }
-                    onTextChanged: bridge.filter_games(text)
+                    onTextChanged: if (Bridge) Bridge.filter_games(text)
                 }
 
                 Button {
                     text: "[ ISO INSTALL ]"
-                    onClicked: bridge.start_iso_install()
+                    onClicked: Bridge.start_iso_install()
                     contentItem: Text {
                         text: parent.text
                         font.family: dosFont.name
@@ -66,7 +67,7 @@ ApplicationWindow {
 
                 Button {
                     text: "[ SCAN ]"
-                    onClicked: bridge.force_scan()
+                    onClicked: if (Bridge) Bridge.force_scan()
                     contentItem: Text {
                         text: parent.text
                         font.family: dosFont.name
@@ -110,7 +111,7 @@ ApplicationWindow {
                 anchors.fill: parent
                 cellWidth: 210
                 cellHeight: 270
-                model: bridge ? bridge.games : []
+                model: Bridge ? Bridge.games : [] // Controleer of Bridge bestaat
                 clip: true
 
                 delegate: Item {
@@ -162,7 +163,7 @@ ApplicationWindow {
         id: progressOverlay
         anchors.fill: parent
         color: "#80000000"
-        visible: bridge.progressVisible
+        visible: Bridge ? Bridge.progressVisible : false // Controleer of Bridge bestaat
         z: 1000 // Altijd bovenop
 
         Rectangle {
@@ -179,7 +180,7 @@ ApplicationWindow {
                 spacing: 10
 
                 Text {
-                    text: bridge.progressMessage
+                    text: Bridge ? Bridge.progressMessage : "" // Controleer of Bridge bestaat
                     font.family: dosFont.name
                     font.pixelSize: 14
                     color: "black"
@@ -198,7 +199,7 @@ ApplicationWindow {
                     Rectangle {
                         id: progressBarInner
                         height: parent.height - 4
-                        width: (parent.width - 4) * bridge.progressValue
+                        width: Bridge ? (parent.width - 4) * Bridge.progressValue : 0 // Controleer of Bridge bestaat
                         x: 2
                         y: 2
                         color: "#55FFFF" // Cyan (Classic DOS progress color)
@@ -206,7 +207,7 @@ ApplicationWindow {
                 }
 
                 Text {
-                    text: Math.floor(bridge.progressValue * 100) + "%"
+                    text: Bridge ? Math.floor(Bridge.progressValue * 100) + "%" : "0%" // Controleer of Bridge bestaat
                     font.family: dosFont.name
                     color: "black"
                     Layout.fillWidth: true
@@ -234,7 +235,7 @@ ApplicationWindow {
         property string folderToDelete: ""
         onClosed: {
             if (confirmed && folderToDelete !== "") {
-                bridge.perform_delete_game(folderToDelete)
+                if (Bridge) Bridge.perform_delete_game(folderToDelete) // Controleer of Bridge bestaat
             }
         }
     }
