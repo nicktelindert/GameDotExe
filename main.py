@@ -4,7 +4,7 @@ import platform
 import shutil
 from PySide6.QtWidgets import (QApplication, QFileDialog, QInputDialog, QMessageBox)
 from PySide6.QtGui import QIcon
-from PySide6.QtQml import QQmlApplicationEngine
+from PySide6.QtQml import QQmlApplicationEngine, qmlRegisterSingletonInstance
 from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtCore import Qt, QObject, Slot, Property, Signal, QCoreApplication, QUrl
 
@@ -54,6 +54,7 @@ class QmlBridge(QObject):
                 "icon": ("file:///" + g.icon_path.replace('\\', '/')) if g.icon_path else "",
                 "command": g.exec_cmd or "",
                 "folder": g.folder_name,
+                "safeFolder": g.safe_folder_name,
                 "releaseDate": g.release_date or QCoreApplication.translate("QmlBridge", "Unknown"),
                 "setup_cmd": g.setup_cmd,
                 "compatibility": g.compatibility,
@@ -83,7 +84,7 @@ class QmlBridge(QObject):
             name=game_data.get("name"),
             icon_path=game_data.get("icon_path"),
             exec_cmd=game_data.get("command"),
-            setup_cmd=game_data.get("setup_cmd"),
+            setup_cmd=game_data.get("setup_cmd", None),
             compatibility=game_data.get("compatibility", ""),
             release_date=game_data.get("releaseDate", ""),
             internal_exec=game_data.get("internal_exec", ""),
@@ -207,8 +208,6 @@ class QmlBridge(QObject):
     @Slot(str)
     def unignore_folder(self, folder_name):
         self.presenter.unignore_folder(folder_name)
-
-from PySide6.QtQml import qmlRegisterSingletonInstance
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

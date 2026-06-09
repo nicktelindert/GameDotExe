@@ -5,6 +5,7 @@ import pathlib
 import sys
 import requests
 import re
+from utils.path_utils import get_safe_filename
 from PySide6.QtCore import QCoreApplication # Keep this for applicationName
 from core.GameInfo import GameInfo
 from crawlers.MetadataProvider import PCGamingWikiProvider
@@ -122,7 +123,7 @@ class Crawler:
         
         # Detecteer ISO/CUE in centrale opslag
         current_iso_path = None
-        safe_folder_name = self._get_safe_filename(game_name)
+        safe_folder_name = get_safe_filename(game_name) # Voor nieuwe games, nog geen GameInfo object
         iso_storage_dir = os.path.join(os.path.dirname(self.db.db_path), "ISOS", safe_folder_name)
         if os.path.exists(iso_storage_dir):
             for f in os.listdir(iso_storage_dir):
@@ -154,7 +155,7 @@ class Crawler:
         # Artwork afhandeling
         icon_path = os.path.join(self.assets_dir, "default_icon.svg")
         if meta["icon_url"]:
-            safe_name = self._get_safe_filename(game_name)
+            safe_name = get_safe_filename(game_name) # Voor nieuwe games, nog geen GameInfo object
             icon_path = self._download_artwork(safe_name, meta["icon_url"])
         else:
             # Fallback: check for local icon in game folder
@@ -175,11 +176,6 @@ class Crawler:
         # Replace underscores, hyphens and points with spaces
         cleaned = name.replace('_', ' ').replace('-', ' ').replace('.', ' ').strip()
         return cleaned
-
-    def _get_safe_filename(self, name):
-        """Zorgt dat een gamenaam veilig is om als bestandsnaam te gebruiken op alle OS'en."""
-        # Verwijder alles wat niet een letter, cijfer, spatie, punt of underscore is
-        return re.sub(r'[^\w\s\.-]', '', name).strip()
 
     def _extract_name_from_diz(self, path):
         """Tries to find and parse FILE_ID.DIZ for a clean game title."""
